@@ -58,7 +58,14 @@
         .batch-bar { margin-left: auto; display: flex; gap: 8px; }
         select { border: 1px solid #cbd5e1; padding: 7px 12px; border-radius: 14px; font-size: 13px; }
         input[type="checkbox"] { accent-color: #1a6d3f; }
-        /* === Responsive Mobile Support === */
+                /* === Cloud Sync === */
+        .sync-bar { display:flex; align-items:center; gap:8px; padding:8px 12px; margin-bottom:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; font-size:12px; color:#166534; }
+        .sync-bar button { padding:6px 14px; font-size:12px; border-radius:10px; }
+        .sync-status { flex:1; font-size:11px; color:#64748b; text-align:right; }
+        .sync-bar .btn-sync { background:#1a6d3f; color:white; }
+        .sync-bar .btn-sync-down { background:#2563eb; color:white; }
+        @media (max-width:768px) { .sync-bar { flex-wrap:wrap; gap:6px; padding:8px; } .sync-bar button { flex:1; min-width:80px; } }
+/* === Responsive Mobile Support === */
         .sidebar-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:49; }
         .sidebar-overlay.open { display:block; }
         .top-bar { display:none; background:white; padding:12px 16px; border-bottom:1px solid #e2e8f0; align-items:center; position:sticky; top:0; z-index:10; }
@@ -132,7 +139,13 @@
         <div class="summary">
             <h2 style="margin-bottom:12px;font-size:15px;color:#7c9a8e;letter-spacing:1px;">📊 利润总览 <span style="font-size:11px;opacity:0.6;">(上楼费已计入运价 | 月度分析含合计/趟均运力)</span></h2>
             <div class="summary-stats">
-                <div class="stat"><div class="stat-label">总单数</div><div class="stat-value" id="totalOrders">0</div></div>
+                <div class="stat"><div class="stat-label">总单数</div><div class="stat-value" id="totalOrders">0</div>
+        <div class="sync-bar" id="syncBar">
+            <span>&#9729; &#20113;&#21516;&#27493;</span>
+            <button class="btn-sync" onclick="cloudSave()">&#8593; &#19978;&#20256;</button>
+            <button class="btn-sync-down" onclick="cloudLoad()">&#8595; &#19979;&#36733;</button>
+            <span class="sync-status" id="syncStatus"></span>
+        </div></div>
                 <div class="stat"><div class="stat-label">总运价(元)</div><div class="stat-value" id="totalRevenue">0</div></div>
                 <div class="stat"><div class="stat-label">司机总工资(实发)</div><div class="stat-value" id="totalActualSalary">0</div></div>
                 <div class="stat"><div class="stat-label">总利润(元)</div><div class="stat-value" id="totalProfit" style="color:#e6a817;">0</div></div>
@@ -1455,6 +1468,125 @@
         },
         refresh: function() { saveAndRefresh(); }
     };
+
+    // ================= Cloud Sync (GitHub Gist) =================
+    var GIST_TOKEN = localStorage.getItem('songshu_gist_token') || '';
+    function setToken(t) { GIST_TOKEN = t; localStorage.setItem('songshu_gist_token', t); }
+    function ensureToken() {
+        if (GIST_TOKEN) return true;
+        var t = prompt('Please enter your GitHub Token for cloud sync:\n(needs gist scope)');
+        if (t && t.trim()) { setToken(t.trim()); return true; }
+        updateSyncStatus('no token configured');
+        return false;
+    }
+    var GIST_ID = null; // will be auto-created on first sync
+    var GIST_FILENAME = 'songshu_data.json';
+    var GIST_ID_KEY = 'songshu_gist_id';
+
+    function getGistId() {
+        if (GIST_ID) return GIST_ID;
+        GIST_ID = localStorage.getItem(GIST_ID_KEY);
+        return GIST_ID;
+    }
+
+    function setGistId(id) {
+        GIST_ID = id;
+        localStorage.setItem(GIST_ID_KEY, id);
+    }
+
+    function updateSyncStatus(msg) {
+        var el = document.getElementById('syncStatus');
+        if (el) el.textContent = msg;
+    }
+
+    function cloudSave() {
+        if (!ensureToken()) return;
+        updateSyncStatus('uploading...');
+        var data = { pricing:pricing, drivers:drivers, merchants:merchants, deliveries:deliveries, vehicles:vehicles, penalties:penalties, expenses:expenses, _ts:Date.now() };
+        var content = JSON.stringify(data);
+        var gistId = getGistId();
+        var files = {};
+        files[GIST_FILENAME] = { content: content };
+
+        if (gistId) {
+            // Update existing gist
+            fetch('https://api.github.com/gists/' + gistId, {
+                method: 'PATCH',
+                headers: { 'Authorization': 'token ' + GIST_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ files: files })
+            }).then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            }).then(function(d) {
+                updateSyncStatus('uploaded: ' + new Date().toLocaleTimeString());
+            }).catch(function(e) {
+                updateSyncStatus('upload failed: ' + e.message);
+                // If 404, gist was deleted, create new
+                if (e.message.indexOf('404') >= 0) { setGistId(null); cloudSave(); }
+            });
+        } else {
+            // Create new gist
+            fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: { 'Authorization': 'token ' + GIST_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: 'SongShu Platform Data', public: false, files: files })
+            }).then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            }).then(function(d) {
+                setGistId(d.id);
+                updateSyncStatus('uploaded: ' + new Date().toLocaleTimeString());
+            }).catch(function(e) {
+                updateSyncStatus('create failed: ' + e.message);
+            });
+        }
+    }
+
+    function cloudLoad() {
+        if (!ensureToken()) return;
+        var gistId = getGistId();
+        if (!gistId) {
+            // Try to find our gist
+            updateSyncStatus('searching...');
+            fetch('https://api.github.com/gists', {
+                headers: { 'Authorization': 'token ' + GIST_TOKEN }
+            }).then(function(r) { return r.json(); }).then(function(gists) {
+                for (var i = 0; i < gists.length; i++) {
+                    if (gists[i].files && gists[i].files[GIST_FILENAME]) {
+                        setGistId(gists[i].id);
+                        cloudLoad();
+                        return;
+                    }
+                }
+                updateSyncStatus('no cloud data found, upload first');
+            }).catch(function(e) { updateSyncStatus('search failed: ' + e.message); });
+            return;
+        }
+
+        updateSyncStatus('downloading...');
+        fetch('https://api.github.com/gists/' + gistId, {
+            headers: { 'Authorization': 'token ' + GIST_TOKEN }
+        }).then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(d) {
+            var file = d.files[GIST_FILENAME];
+            if (!file || !file.content) throw new Error('no data');
+            var data = JSON.parse(file.content);
+            if (data.pricing) pricing = data.pricing;
+            if (data.drivers) drivers = data.drivers;
+            if (data.merchants) merchants = data.merchants;
+            if (data.deliveries) deliveries = data.deliveries;
+            if (data.vehicles) vehicles = data.vehicles;
+            if (data.penalties) penalties = data.penalties;
+            if (data.expenses) expenses = data.expenses;
+            saveAndRefresh();
+            updateSyncStatus('downloaded: ' + new Date().toLocaleTimeString());
+        }).catch(function(e) {
+            updateSyncStatus('download failed: ' + e.message);
+            if (e.message.indexOf('404') >= 0) { setGistId(null); updateSyncStatus('cloud data not found'); }
+        });
+    }
     // ================= 初始化 =================
     loadFromLocal();
     recomputeAllDeliveries();
