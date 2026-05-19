@@ -67,25 +67,54 @@
         .bottom-tabs { display:none; background:white; border-top:1px solid #e2e8f0; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; bottom:0; z-index:10; }
         .bottom-tabs-inner { display:flex; min-width:max-content; }
         .btab { flex:0 0 auto; min-width:56px; padding:6px 10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:none; background:transparent; color:#64748b; font-size:10px; cursor:pointer; white-space:nowrap; }
+        .btab-icon { font-size:20px; line-height:1.2; }
+        .btab-label { font-size:10px; line-height:1.2; }
         .btab.active { color:#1a6d3f; font-weight:600; }
         @media (max-width: 768px) {
             .sidebar { position:fixed; left:-280px; top:0; bottom:0; width:260px; z-index:50; transition:left 0.3s; box-shadow:none; }
             .sidebar.open { left:0; box-shadow:4px 0 20px rgba(0,0,0,0.15); }
             .top-bar { display:flex; }
-            .bottom-tabs { display:block; }
-            .main-content { padding:16px; display:flex; flex-direction:column; min-height:100vh; }
-            .summary { border-radius:16px; padding:16px; margin-bottom:16px; }
-            .stat { min-width:80px; padding:8px 12px; }
-            .stat-value { font-size:20px; }
-            .card { border-radius:16px; padding:14px; margin-bottom:16px; }
-            .filter-bar { gap:8px; }
-            .filter-item { min-width:100px; }
-            .modal-content { width:95%; border-radius:16px; padding:16px; }
+            .bottom-tabs { display:flex; padding:6px 0; }
+            .bottom-tabs-inner { display:flex; width:100%; justify-content:space-around; }
+            .btab { min-width:unset; flex:1; padding:8px 4px; font-size:11px; gap:3px; }
+            .btab-icon { font-size:18px; display:block; }
+            .btab-label { font-size:10px; display:block; }
+            .main-content { padding:12px; display:flex; flex-direction:column; min-height:100vh; }
+            .app-layout { flex-direction:column; }
+            .summary { border-radius:14px; padding:14px 12px; margin-bottom:14px; }
+            .summary-stats { gap:8px; justify-content:space-between; }
+            .stat { min-width:70px; padding:10px 8px; flex:1; border-radius:12px; }
+            .stat-label { font-size:11px; margin-bottom:4px; }
+            .stat-value { font-size:18px; }
+            .card { border-radius:14px; padding:16px 12px; margin-bottom:14px; }
+            .card-header { margin-bottom:12px; padding-bottom:10px; gap:8px; }
+            .section-title { font-size:15px; }
+            .data-table th, .data-table td { padding:10px 6px; font-size:12px; white-space:normal; word-break:break-all; }
+            .data-table { table-layout:auto; }
+            .table-wrapper { margin:0 -4px; border-radius:10px; border:1px solid #e2e8f0; }
+            .filter-bar { gap:8px; flex-direction:column; }
+            .filter-item { min-width:unset; width:100%; }
+            .filter-item select, .filter-item input { width:100%; padding:10px 12px; font-size:14px; }
+            .modal-content { width:95%; border-radius:16px; padding:20px 16px; max-height:85vh; }
+            .modal-content input, .modal-content select, .modal-content textarea { padding:12px; font-size:14px; margin-bottom:12px; }
+            button { padding:10px 16px; font-size:14px; }
+            .btn-small { padding:6px 12px; font-size:12px; }
+            .batch-bar { margin-left:0; margin-top:8px; width:100%; justify-content:flex-start; flex-wrap:wrap; }
+            .import-box { padding:12px; border-radius:12px; }
+            .summary h2 { font-size:13px !important; }
         }
         @media (max-width: 375px) {
-            .stat { min-width:70px; padding:6px 8px; }
-            .stat-value { font-size:16px; }
-            .main-content { padding:10px; }
+            .stat { min-width:60px; padding:8px 6px; }
+            .stat-value { font-size:15px; }
+            .stat-label { font-size:10px; }
+            .main-content { padding:8px; }
+            .card { padding:12px 10px; }
+            .data-table th, .data-table td { padding:8px 4px; font-size:11px; }
+            .btab { padding:6px 2px; }
+            .btab-icon { font-size:16px; }
+            .btab-label { font-size:9px; }
+            .section-title { font-size:14px; }
+            button { padding:8px 12px; font-size:13px; }
         }
     </style>
 </head>
@@ -107,7 +136,7 @@
     <div class="main-content">
         <div class="top-bar">
             <button class="menu-btn" onclick="openSidebar()">&#9776;</button>
-            <span class="top-bar-title">&#128063;&#65039; 松鼠项目看板</span>
+            <span class="top-bar-title">&#128063;&#65039; &#26494;&#40736;&#39033;&#30446;&#30475;&#26495;</span>
             <button class="menu-btn" style="visibility:hidden;">&#9776;</button>
         </div>
         <div class="summary">
@@ -129,19 +158,7 @@
         <div id="penaltyPanel" class="tab-panel" style="display: none;"></div>
         <div id="financePanel" class="tab-panel" style="display: none;"></div>
 
-        <nav class="bottom-tabs" id="bottomTabs">
-            <div class="bottom-tabs-inner">
-                <button class="btab active" data-tab="driver" onclick="switchTab('driver',this)">&#128666;<span>司机</span></button>
-                <button class="btab" data-tab="driverMgmt" onclick="switchTab('driverMgmt',this)">&#128101;<span>管理</span></button>
-                <button class="btab" data-tab="merchant" onclick="switchTab('merchant',this)">&#127978;<span>门店</span></button>
-                <button class="btab" data-tab="config" onclick="switchTab('config',this)">&#9881;<span>配置</span></button>
-                <button class="btab" data-tab="records" onclick="switchTab('records',this)">&#128203;<span>记录</span></button>
-                <button class="btab" data-tab="import" onclick="switchTab('import',this)">&#128194;<span>导入</span></button>
-                <button class="btab" data-tab="vehicle" onclick="switchTab('vehicle',this)">&#128667;<span>车辆</span></button>
-                <button class="btab" data-tab="penalty" onclick="switchTab('penalty',this)">&#9888;<span>扣罚</span></button>
-                <button class="btab" data-tab="finance" onclick="switchTab('finance',this)">&#128210;<span>财务</span></button>
-            </div>
-        </nav>
+        <nav class="bottom-tabs" id="bottomTabs"><div class="bottom-tabs-inner"><button class="btab active" data-tab="driver" onclick="switchTab('driver',this)"><span class="btab-icon">&#128666;</span><span class="btab-label">&#21496;&#26426;</span></button><button class="btab" data-tab="driverMgmt" onclick="switchTab('driverMgmt',this)"><span class="btab-icon">&#128101;</span><span class="btab-label">&#31649;&#29702;</span></button><button class="btab" data-tab="merchant" onclick="switchTab('merchant',this)"><span class="btab-icon">&#127978;</span><span class="btab-label">&#38376;&#24215;</span></button><button class="btab" data-tab="config" onclick="switchTab('config',this)"><span class="btab-icon">&#9881;</span><span class="btab-label">&#37197;&#32622;</span></button><button class="btab" data-tab="records" onclick="switchTab('records',this)"><span class="btab-icon">&#128203;</span><span class="btab-label">&#35760;&#24405;</span></button><button class="btab" data-tab="import" onclick="switchTab('import',this)"><span class="btab-icon">&#128194;</span><span class="btab-label">&#23548;&#20837;</span></button><button class="btab" data-tab="vehicle" onclick="switchTab('vehicle',this)"><span class="btab-icon">&#128667;</span><span class="btab-label">&#36710;&#36742;</span></button><button class="btab" data-tab="penalty" onclick="switchTab('penalty',this)"><span class="btab-icon">&#9888;</span><span class="btab-label">&#25187;&#32602;</span></button><button class="btab" data-tab="finance" onclick="switchTab('finance',this)"><span class="btab-icon">&#128210;</span><span class="btab-label">&#36130;&#21153;</span></button></div></nav>
     </div>
 </div>
 
