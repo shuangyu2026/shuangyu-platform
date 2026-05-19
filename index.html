@@ -650,14 +650,22 @@
         }
         var driverOptions = '<option value="">全部司机</option>' + driverNames.map(function(n) { return '<option value="' + n + '"' + (n === defaultDriver ? ' selected' : '') + '>' + n + '</option>'; }).join('');
 
+                var isMobileFilter = window.innerWidth <= 768;
+        var filterBoxStyle = isMobileFilter
+            ? 'display:flex;flex-direction:column;gap:10px;margin-bottom:16px;background:rgba(45,138,110,0.04);border:1px solid rgba(45,138,110,0.1);border-radius:12px;padding:12px;'
+            : 'display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px;background:rgba(45,138,110,0.04);border:1px solid rgba(45,138,110,0.1);border-radius:4px;padding:14px 20px;';
+        var filterSelStyle = isMobileFilter
+            ? 'width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(45,138,110,0.15);font-size:14px;background:#f8fafc;color:#2d3436;'
+            : 'padding:6px 12px;border-radius:8px;border:1px solid rgba(45,138,110,0.15);font-size:13px;background:#f8fafc;color:#2d3436;';
+        var filterItemStyle = isMobileFilter ? 'display:flex;flex-direction:column;gap:4px;' : 'display:flex;align-items:center;gap:6px;';
         container.innerHTML =
-            '<div id="driverProgressBoard"></div>' +
-            '<hr style="border:none;border-top:1px solid rgba(45,138,110,0.12);margin:28px 0;">' +
-                        '<div class="board-filter-mobile" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px;background:rgba(45,138,110,0.04);border:1px solid rgba(45,138,110,0.1);border-radius:4px;padding:14px 20px;">' +
+             '<div id="driverProgressBoard"></div>' +
+             '<hr style="border:none;border-top:1px solid rgba(45,138,110,0.12);margin:' + (isMobileFilter ? '16px 0' : '28px 0') + ';">' +
+            '<div style="' + filterBoxStyle + '">' +
             '<label style="font-weight:600;font-size:14px;color:#2d8a6e;">🔍 筛选</label>' +
-            '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:13px;color:#7c9a8e;">粒度</span><select id="dpGranularity" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(45,138,110,0.15);font-size:13px;background:#f8fafc;color:#2d3436;">' + granOptions + '</select></div>' +
-            '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:13px;color:#7c9a8e;">时段</span><select id="dpPeriod" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(45,138,110,0.15);font-size:13px;min-width:140px;background:#f8fafc;color:#2d3436;">' + buildPeriodOptions(defaultGranularity) + '</select></div>' +
-            '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:13px;color:#7c9a8e;">司机</span><select id="dpDriver" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(45,138,110,0.15);font-size:13px;background:#f8fafc;color:#2d3436;">' + driverOptions + '</select></div></div>' +
+            '<div style="' + filterItemStyle + '"><span style="font-size:13px;color:#7c9a8e;">粒度</span><select id="dpGranularity" style="' + filterSelStyle + '">' + granOptions + '</select></div>' +
+            '<div style="' + filterItemStyle + '"><span style="font-size:13px;color:#7c9a8e;">时段</span><select id="dpPeriod" style="' + filterSelStyle + (isMobileFilter ? '' : 'min-width:140px;') + '">' + buildPeriodOptions(defaultGranularity) + '</select></div>' +
+            '<div style="' + filterItemStyle + '"><span style="font-size:13px;color:#7c9a8e;">司机</span><select id="dpDriver" style="' + filterSelStyle + '">' + driverOptions + '</select></div></div>' +
             '<div id="driverAnalysisCard"></div><div id="driverDetailsWrapper"></div>';
 
         document.getElementById('driverSelectList').innerHTML = driverNames.map(function(n) { return '<option>' + n + '</option>'; }).join('');
@@ -670,7 +678,8 @@
             var prevBoardMonth = boardContainer.getAttribute('data-month');
             var boardMonth = (prevBoardMonth && months.indexOf(prevBoardMonth) !== -1) ? prevBoardMonth : months[0];
 
-            function renderBoard(month) {
+                        function renderBoard(month) {
+                var isMobile = window.innerWidth <= 768;
                 var idx = months.indexOf(month);
                 var canPrev = idx < months.length - 1; var canNext = idx > 0;
                 var year = parseInt(month.split('-')[0]); var mon = parseInt(month.split('-')[1]);
@@ -688,17 +697,25 @@
                 var maxTrips = boardData.length > 0 ? boardData[0].trips : 1;
 
                 var monthSelectOpts = months.map(function(m) { return '<option value="' + m + '"' + (m === month ? ' selected' : '') + '>' + m + '</option>'; }).join('');
-                                var navHtml = '<div class="board-nav-mobile" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;">' +
-                    '<button id="boardPrev" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(45,138,110,0.15);background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#7c9a8e;' + (!canPrev ? 'opacity:0.3;cursor:not-allowed;' : '') + '" ' + (!canPrev ? 'disabled' : '') + '>◀</button>' +
-                    '<select id="boardMonthSelect" style="font-size:18px;font-weight:700;color:#2d8a6e;border:1px solid rgba(45,138,110,0.2);border-radius:8px;padding:6px 14px;cursor:pointer;background:#fff;min-width:130px;text-align:center;">' + monthSelectOpts + '</select>' +
-                    '<button id="boardNext" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(45,138,110,0.15);background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#7c9a8e;' + (!canNext ? 'opacity:0.3;cursor:not-allowed;' : '') + '" ' + (!canNext ? 'disabled' : '') + '>▶</button></div>';
+                var navBtnSize = isMobile ? '40px' : '36px';
+                var navFontSize = isMobile ? '16px' : '18px';
+                var navSelPad = isMobile ? '8px 12px' : '6px 14px';
+                var navHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:' + (isMobile ? '10px' : '12px') + ';margin-bottom:' + (isMobile ? '12px' : '16px') + ';">' +
+                    '<button id="boardPrev" style="width:' + navBtnSize + ';height:' + navBtnSize + ';border-radius:50%;border:1px solid rgba(45,138,110,0.15);background:#fff;font-size:' + navFontSize + ';cursor:pointer;display:flex;align-items:center;justify-content:center;color:#7c9a8e;' + (!canPrev ? 'opacity:0.3;cursor:not-allowed;' : '') + '" ' + (!canPrev ? 'disabled' : '') + '>◀</button>' +
+                    '<select id="boardMonthSelect" style="font-size:' + navFontSize + ';font-weight:700;color:#2d8a6e;border:1px solid rgba(45,138,110,0.2);border-radius:8px;padding:' + navSelPad + ';cursor:pointer;background:#fff;min-width:' + (isMobile ? '120px' : '130px') + ';text-align:center;">' + monthSelectOpts + '</select>' +
+                    '<button id="boardNext" style="width:' + navBtnSize + ';height:' + navBtnSize + ';border-radius:50%;border:1px solid rgba(45,138,110,0.15);background:#fff;font-size:' + navFontSize + ';cursor:pointer;display:flex;align-items:center;justify-content:center;color:#7c9a8e;' + (!canNext ? 'opacity:0.3;cursor:not-allowed;' : '') + '" ' + (!canNext ? 'disabled' : '') + '>▶</button></div>';
 
-                                var summaryHtml = '<div class="board-summary-mobile" style="background:rgba(45,138,110,0.05);border:1px solid rgba(45,138,110,0.15);border-radius:10px;padding:14px 24px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-around;">' +
-                    '<div style="text-align:center;"><div class="bsm-label" style="font-size:11px;opacity:0.7;color:#7c9a8e;">出车司机</div><div class="bsm-val" style="font-size:22px;font-weight:700;color:#2d8a6e;">' + sumDrivers + '</div></div>' +
-                    '<div style="text-align:center;"><div class="bsm-label" style="font-size:11px;opacity:0.7;color:#7c9a8e;">配送趟次</div><div class="bsm-val" style="font-size:22px;font-weight:700;color:#2d8a6e;">' + sumTrips + '</div></div>' +
-                    '<div style="text-align:center;"><div class="bsm-label" style="font-size:11px;opacity:0.7;color:#7c9a8e;">总运价</div><div class="bsm-val" style="font-size:22px;font-weight:700;color:#2d8a6e;">' + sumRevenue.toFixed(0) + '</div></div>' +
-                    '<div style="text-align:center;"><div class="bsm-label" style="font-size:11px;opacity:0.7;color:#7c9a8e;">总件数</div><div class="bsm-val" style="font-size:22px;font-weight:700;color:#2d8a6e;">' + sumTrips + '</div></div>' +
-                    '<div style="text-align:center;"><div class="bsm-label" style="font-size:11px;opacity:0.7;color:#7c9a8e;">利润</div><div class="bsm-val" style="font-size:22px;font-weight:700;color:' + (sumProfit >= 0 ? '#e6a817' : '#e74c3c') + ';">' + sumProfit.toFixed(0) + '</div></div></div>';
+                var summaryStyle = isMobile
+                    ? 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:rgba(45,138,110,0.05);border:1px solid rgba(45,138,110,0.15);border-radius:12px;padding:12px;margin-bottom:16px;'
+                    : 'background:rgba(45,138,110,0.05);border:1px solid rgba(45,138,110,0.15);border-radius:10px;padding:14px 24px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-around;';
+                var sumValSize = isMobile ? '18px' : '22px';
+                var sumLabelSize = isMobile ? '10px' : '11px';
+                var summaryHtml = '<div style="' + summaryStyle + '">' +
+                    '<div style="text-align:center;"><div style="font-size:' + sumLabelSize + ';opacity:0.7;color:#7c9a8e;">出车司机</div><div style="font-size:' + sumValSize + ';font-weight:700;color:#2d8a6e;">' + sumDrivers + '</div></div>' +
+                    '<div style="text-align:center;"><div style="font-size:' + sumLabelSize + ';opacity:0.7;color:#7c9a8e;">配送趟次</div><div style="font-size:' + sumValSize + ';font-weight:700;color:#2d8a6e;">' + sumTrips + '</div></div>' +
+                    '<div style="text-align:center;"><div style="font-size:' + sumLabelSize + ';opacity:0.7;color:#7c9a8e;">总运价</div><div style="font-size:' + sumValSize + ';font-weight:700;color:#2d8a6e;">' + sumRevenue.toFixed(0) + '</div></div>' +
+                    '<div style="text-align:center;"><div style="font-size:' + sumLabelSize + ';opacity:0.7;color:#7c9a8e;">总件数</div><div style="font-size:' + sumValSize + ';font-weight:700;color:#2d8a6e;">' + sumTrips + '</div></div>' +
+                    '<div style="text-align:center;"><div style="font-size:' + sumLabelSize + ';opacity:0.7;color:#7c9a8e;">利润</div><div style="font-size:' + sumValSize + ';font-weight:700;color:' + (sumProfit >= 0 ? '#e6a817' : '#e74c3c') + ';">' + sumProfit.toFixed(0) + '</div></div></div>';
 
                 var cardsHtml = '';
                 if (boardData.length === 0 || sumTrips === 0) {
@@ -718,34 +735,35 @@
                     var firstDayOfWeek = new Date(year, mon - 1, 1).getDay();
                     var startOffset = (firstDayOfWeek === 0) ? 6 : (firstDayOfWeek - 1);
 
+                                        var cellSize = isMobile ? '13px' : '16px';
                     var cardItems = activeDrivers.map(function(drData) {
                         var pct = maxTrips > 0 ? Math.round((drData.trips / maxTrips) * 100) : 0;
                         var profitColor = drData.profit >= 0 ? '#e6a817' : '#e74c3c';
                         var map = driverDayMap[drData.name];
                         var calendarCells = '';
-                        for (var blank = 0; blank < startOffset; blank++) { calendarCells += '<div style="width:16px;height:16px;"></div>'; }
+                        for (var blank = 0; blank < startOffset; blank++) { calendarCells += '<div style="width:' + cellSize + ';height:' + cellSize + ';"></div>'; }
                         for (var di = 1; di <= daysInMonth; di++) {
                             var dayKey = (di < 10 ? '0' : '') + di; var count = map[dayKey] || 0; var bgColor;
                             if (count === 0) { bgColor = 'rgba(45,138,110,0.06)'; }
                             else { var intensity = Math.min(count / maxDayTrips, 1); if (intensity <= 0.25) bgColor = 'rgba(45,138,110,0.15)'; else if (intensity <= 0.5) bgColor = 'rgba(45,138,110,0.3)'; else if (intensity <= 0.75) bgColor = 'rgba(45,138,110,0.5)'; else bgColor = '#2d8a6e'; }
-                            calendarCells += '<div style="width:16px;height:16px;background:' + bgColor + ';border-radius:2px;cursor:default;" title="' + month + '-' + dayKey + ': ' + count + '趟"></div>';
+                            calendarCells += '<div style="width:' + cellSize + ';height:' + cellSize + ';background:' + bgColor + ';border-radius:2px;cursor:default;" title="' + month + '-' + dayKey + ': ' + count + '趟"></div>';
                         }
-                                                var dataHtml = '<div class="card-data-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:11px;color:#7c9a8e;margin-bottom:8px;">' +
+                        var dataHtml = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px ' + (isMobile ? '8px' : '12px') + ';font-size:' + (isMobile ? '11px' : '11px') + ';color:#7c9a8e;margin-bottom:8px;">' +
                             '<div>趟次: <b style="color:#2d3436;">' + drData.trips + '</b></div>' +
                             '<div>税后: <b style="color:#2d3436;">' + drData.revenue.toFixed(0) + '</b></div>' +
                             '<div>工资: <b style="color:#2d3436;">' + drData.actualSalary.toFixed(0) + '</b></div>' +
                             '<div>含税: <b style="color:#2d3436;">' + drData.gross.toFixed(0) + '</b></div>' +
                             '<div>趟均: <b style="color:#2d3436;">' + drData.avgPerTrip.toFixed(0) + '</b></div>' +
                             '<div style="color:' + profitColor + ';">利润: <b>' + drData.profit.toFixed(0) + '</b></div></div>';
-                        return '<div class="board-card-item" style="background:#fff;border-radius:10px;border:1px solid #e6ede9;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:6px;">' +
+                        return '<div style="background:#fff;border-radius:' + (isMobile ? '12px' : '10px') + ';border:1px solid #e6ede9;padding:' + (isMobile ? '12px' : '14px') + ';box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:' + (isMobile ? '4px' : '6px') + ';">' +
                             '<div style="display:flex;justify-content:space-between;align-items:center;">' +
                             '<span style="font-size:14px;font-weight:700;color:#2d8a6e;">👨‍✈️ ' + drData.name + '</span>' +
                             '<span style="font-size:11px;background:rgba(45,138,110,0.08);color:#2d8a6e;padding:2px 8px;border-radius:4px;font-weight:500;">出勤 ' + drData.workDays + ' 天</span></div>' +
                             dataHtml +
                             '<div style="margin-bottom:4px;"><div style="display:flex;justify-content:space-between;font-size:10px;color:#7c9a8e;margin-bottom:2px;"><span>件数进度</span><span>' + drData.trips + ' / ' + maxTrips + '</span></div>' +
                             '<div style="height:8px;background:rgba(45,138,110,0.1);border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#6dd5a8,#2d8a6e);border-radius:2px;transition:width 0.3s;"></div></div></div>' +
-                                                        '<div class="card-calendar" style="margin-top:4px;"><div style="display:flex;gap:2px;margin-bottom:3px;font-size:9px;color:#7c9a8e;">' +
-                            '<div style="width:16px;text-align:center;">一</div><div style="width:16px;text-align:center;">二</div><div style="width:16px;text-align:center;">三</div><div style="width:16px;text-align:center;">四</div><div style="width:16px;text-align:center;">五</div><div style="width:16px;text-align:center;">六</div><div style="width:16px;text-align:center;">日</div></div>' +
+                            '<div style="margin-top:4px;"><div style="display:flex;gap:2px;margin-bottom:3px;font-size:' + (isMobile ? '8px' : '9px') + ';color:#7c9a8e;">' +
+                            '<div style="width:' + cellSize + ';text-align:center;">一</div><div style="width:' + cellSize + ';text-align:center;">二</div><div style="width:' + cellSize + ';text-align:center;">三</div><div style="width:' + cellSize + ';text-align:center;">四</div><div style="width:' + cellSize + ';text-align:center;">五</div><div style="width:' + cellSize + ';text-align:center;">六</div><div style="width:' + cellSize + ';text-align:center;">日</div></div>' +
                             '<div style="display:flex;flex-wrap:wrap;gap:2px;">' + calendarCells + '</div></div></div>';
                     }).join('');
 
@@ -756,7 +774,10 @@
                         '<span style="display:inline-block;width:12px;height:12px;background:rgba(45,138,110,0.3);border-radius:2px;"></span>' +
                         '<span style="display:inline-block;width:12px;height:12px;background:rgba(45,138,110,0.5);border-radius:2px;"></span>' +
                         '<span style="display:inline-block;width:12px;height:12px;background:#2d8a6e;border-radius:2px;"></span><span>多</span></div>';
-                    cardsHtml = legendHtml + '<div class="board-cards-mobile" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">' + cardItems + '</div>';
+                    var cardsGridStyle = isMobile
+                        ? 'display:grid;grid-template-columns:1fr;gap:10px;'
+                        : 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;';
+                    cardsHtml = legendHtml + '<div style="' + cardsGridStyle + '">' + cardItems + '</div>';
                 }
 
                 boardContainer.innerHTML = navHtml + summaryHtml + cardsHtml;
