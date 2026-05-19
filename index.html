@@ -1337,15 +1337,10 @@
     // ================= 导航切换 =================
     function initNav() {
         var navBtns = document.querySelectorAll('.nav-btn');
-        var panels = document.querySelectorAll('.tab-panel');
         navBtns.forEach(function(btn) {
             btn.addEventListener('click', function() {
-                navBtns.forEach(function(b) { b.classList.remove('active'); });
-                btn.classList.add('active');
                 var tab = btn.getAttribute('data-tab');
-                panels.forEach(function(p) { p.style.display = 'none'; });
-                var target = document.getElementById(tab + 'Panel');
-                if (target) target.style.display = 'block';
+                switchTab(tab);
             });
         });
     }
