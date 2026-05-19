@@ -1,0 +1,703 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>城配利润核算</title>
+<style>
+:root{--green:#1a6d3f;--green-light:#e8f5ee;--green-dark:#0f5a33;--orange:#e67e22;--red:#ef4444;--bg:#f0f4f8;--card:#fff;--text:#1a2c3e;--text2:#64748b;--border:#e2e8f0;--tab-h:64px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);padding-bottom:calc(var(--tab-h) + 16px);min-height:100%;}
+.hero{background:linear-gradient(135deg,var(--green) 0%,var(--green-dark) 100%);padding:20px 16px 24px;color:#fff;}
+.hero-title{font-size:13px;opacity:.8;margin-bottom:14px;letter-spacing:.5px;}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.hero-stat{background:rgba(255,255,255,.15);border-radius:14px;padding:10px 6px;text-align:center;}
+.hero-stat-label{font-size:11px;opacity:.75;margin-bottom:4px;}
+.hero-stat-value{font-size:20px;font-weight:700;line-height:1;}
+.hero-stat-value.hl{color:#fdd835;}
+.bottom-tab{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:#fff;border-top:1px solid var(--border);display:flex;z-index:50;box-shadow:0 -2px 12px rgba(0,0,0,.06);}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:all .2s;border:none;background:transparent;padding:0;}
+.tab-item .ti{font-size:22px;line-height:1;}
+.tab-item .tl{font-size:10px;color:var(--text2);font-weight:500;}
+.tab-item.active .tl{color:var(--green);font-weight:600;}
+.tab-item.active .ti{transform:scale(1.1);}
+.panel{display:none;padding:12px 12px 0;}
+.panel.active{display:block;}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.driver-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.driver-name{font-size:17px;font-weight:700;}
+.driver-profit{font-size:15px;font-weight:600;color:var(--green);}
+.driver-meta{display:flex;gap:12px;font-size:12px;color:var(--text2);margin-bottom:10px;}
+.drow{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px;gap:6px;}
+.drow:last-child{border-bottom:none;}
+.drow-area{flex:1;font-weight:500;}
+.drow-date{color:var(--text2);font-size:11px;min-width:72px;}
+.drow-qty{color:var(--green);font-weight:600;min-width:44px;text-align:right;}
+.drow-profit{color:var(--orange);font-weight:500;min-width:60px;text-align:right;}
+.drow-acts{display:flex;gap:4px;}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{padding:10px 8px;background:#f8fafc;color:var(--text2);font-weight:500;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl td{padding:9px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;color:var(--text);background:#fff;outline:none;transition:border-color .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--green);}
+.pi{width:80px;padding:6px 8px;text-align:center;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:9px 18px;border:none;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;}
+.btn:active{transform:scale(.96);}
+.btn-p{background:var(--green);color:#fff;}
+.btn-o{background:#fff;color:var(--green);border:1.5px solid var(--green);}
+.btn-d{background:var(--red);color:#fff;}
+.btn-g{background:transparent;color:var(--text2);border:1px solid var(--border);}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px;}
+.fab{position:fixed;bottom:calc(var(--tab-h) + 16px);right:16px;width:52px;height:52px;border-radius:26px;background:var(--green);color:#fff;border:none;font-size:26px;box-shadow:0 4px 14px rgba(26,109,63,.35);cursor:pointer;z-index:40;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.fab:active{transform:scale(.93);}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;align-items:flex-end;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal-sheet{background:#fff;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px 20px 32px;max-height:90vh;overflow-y:auto;}
+.modal-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px;}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px;}
+.fg{margin-bottom:12px;}
+.fl{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;}
+.modal-acts{display:flex;gap:10px;margin-top:16px;}
+.modal-acts .btn{flex:1;}
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:flex-end;}
+.fi{display:flex;flex-direction:column;gap:4px;flex:1;min-width:100px;}
+.fi label{font-size:11px;color:var(--text2);}
+.fi select,.fi input{padding:7px 10px;font-size:13px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg-g{background:var(--green-light);color:var(--green);}
+.bg-r{background:#fef2f2;color:var(--red);}
+.bg-o{background:#fff7ed;color:var(--orange);}
+.c-g{color:var(--green);}
+.c-r{color:var(--red);}
+.c-o{color:var(--orange);}
+.c-m{color:var(--text2);}
+.toast{position:fixed;bottom:calc(var(--tab-h) + 20px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:8px 18px;border-radius:40px;font-size:13px;z-index:200;pointer-events:none;display:none;white-space:nowrap;}
+.empty{text-align:center;padding:32px 16px;color:var(--text2);font-size:14px;}
+.bill-box{background:var(--green-light);border-left:4px solid var(--green);padding:12px 14px;border-radius:12px;margin-bottom:12px;font-size:13px;line-height:1.8;}
+.tool-bar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#fff;border-radius:18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.tool-bar .btn{flex:1;min-width:80px;font-size:12px;padding:8px 6px;}
+</style>
+</head>
+<body>
+
+<!-- Hero 总览 -->
+<div class="hero">
+  <div class="hero-title">&#x1F4CA; 城配利润核算</div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-label">总件数</div><div class="hero-stat-value" id="hQty">0</div></div>
+    <div class="hero-stat"><div class="hero-stat-label">总运价</div><div class="hero-stat-value" id="hRev">0</div></div>
+    <div class="hero-stat"><div class="hero-stat-label">司机成本</div><div class="hero-stat-value" id="hCost">0</div></div>
+    <div class="hero-stat"><div class="hero-stat-label">总利润</div><div class="hero-stat-value hl" id="hProfit">0</div></div>
+  </div>
+</div>
+
+<!-- 面板 -->
+<div id="pDriver" class="panel active"></div>
+<div id="pRegion" class="panel"></div>
+<div id="pMerchant" class="panel"></div>
+<div id="pRecords" class="panel"></div>
+<div id="pVehicle" class="panel"></div>
+<div id="pSalary" class="panel"></div>
+<div id="pPenalty" class="panel"></div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn">+</button>
+
+<!-- 底部 Tab -->
+<nav class="bottom-tab">
+  <button class="tab-item active" data-tab="pDriver"><span class="ti">&#x1F69A;</span><span class="tl">司机</span></button>
+  <button class="tab-item" data-tab="pRegion"><span class="ti">&#x1F4CD;</span><span class="tl">报价</span></button>
+  <button class="tab-item" data-tab="pMerchant"><span class="ti">&#x1F3EA;</span><span class="tl">上楼</span></button>
+  <button class="tab-item" data-tab="pRecords"><span class="ti">&#x1F4CB;</span><span class="tl">记录</span></button>
+  <button class="tab-item" data-tab="pVehicle"><span class="ti">&#x1F69B;</span><span class="tl">车辆</span></button>
+  <button class="tab-item" data-tab="pSalary"><span class="ti">&#x1F4B0;</span><span class="tl">工资</span></button>
+  <button class="tab-item" data-tab="pPenalty"><span class="ti">&#x26A0;&#xFE0F;</span><span class="tl">扣罚</span></button>
+</nav>
+
+<!-- 新增配送单 -->
+<div id="mAdd" class="modal-ov">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mAddTitle">&#x2795; 新增配送单</div>
+    <div class="fg"><label class="fl">日期</label><input type="date" id="aDate"></div>
+    <div class="fg"><label class="fl">司机</label><input type="text" id="aDriver" placeholder="司机姓名" list="dlDriver"><datalist id="dlDriver"></datalist></div>
+    <div class="fg"><label class="fl">地区</label><input type="text" id="aArea" placeholder="配送地区" list="dlArea"><datalist id="dlArea"></datalist></div>
+    <div class="fg"><label class="fl">件数</label><input type="number" id="aQty" placeholder="件数" min="1"></div>
+    <div class="fg"><label class="fl">上楼门店（可选，多个用逗号分隔）</label><input type="text" id="aMerchants" placeholder="如：仲恺德润店,港惠店" list="dlMerchant"><datalist id="dlMerchant"></datalist></div>
+    <div class="modal-acts">
+      <button class="btn btn-o" onclick="closeModal('mAdd')">取消</button>
+      <button class="btn btn-p" onclick="saveDelivery()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 车辆弹窗 -->
+<div id="mVehicle" class="modal-ov">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mVehicleTitle">&#x1F69B; 添加车辆</div>
+    <div class="fg"><label class="fl">车牌号</label><input type="text" id="vPlate" placeholder="车牌号（唯一）"></div>
+    <div class="fg"><label class="fl">车型</label><input type="text" id="vModel" placeholder="车型"></div>
+    <div class="fg"><label class="fl">月租金(元)</label><input type="number" id="vRent" placeholder="月租金" step="0.01"></div>
+    <div class="fg"><label class="fl">押金(元)</label><input type="number" id="vDeposit" placeholder="押金" step="0.01"></div>
+    <div class="fg"><label class="fl">购置/租赁日期</label><input type="date" id="vDate"></div>
+    <div class="fg"><label class="fl">当前司机</label><select id="vDriver"><option value="">未分配</option></select></div>
+    <div class="fg"><label class="fl">负责人</label><input type="text" id="vManager" placeholder="负责人" list="dlManager"><datalist id="dlManager"></datalist></div>
+    <div class="fg"><label class="fl">备注</label><textarea id="vRemark" rows="2" placeholder="备注"></textarea></div>
+    <div class="modal-acts">
+      <button class="btn btn-o" onclick="closeModal('mVehicle')">取消</button>
+      <button class="btn btn-p" onclick="saveVehicle()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 扣罚弹窗 -->
+<div id="mPenalty" class="modal-ov">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mPenaltyTitle">&#x26A0;&#xFE0F; 添加扣罚</div>
+    <div class="fg"><label class="fl">日期</label><input type="date" id="pDate"></div>
+    <div class="fg"><label class="fl">司机</label><input type="text" id="pDriver" placeholder="司机姓名" list="dlPDriver"><datalist id="dlPDriver"></datalist></div>
+    <div class="fg"><label class="fl">金额(元)</label><input type="number" id="pAmount" placeholder="扣罚金额" step="0.01"></div>
+    <div class="fg"><label class="fl">原因</label><input type="text" id="pReason" placeholder="扣罚原因"></div>
+    <div class="modal-acts">
+      <button class="btn btn-o" onclick="closeModal('mPenalty')">取消</button>
+      <button class="btn btn-p" onclick="savePenalty()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 上楼门店弹窗 -->
+<div id="mMerchant" class="modal-ov">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mMerchantTitle">&#x1F3EA; 添加门店</div>
+    <div class="fg"><label class="fl">门店名称</label><input type="text" id="mcName" placeholder="门店名称"></div>
+    <div class="fg" style="display:flex;align-items:center;gap:10px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
+        <input type="checkbox" id="mcHasUpstairs" style="width:auto;padding:0;"> 收取上楼费
+      </label>
+    </div>
+    <div class="fg"><label class="fl">上楼费金额(元/次)</label><input type="number" id="mcFee" placeholder="上楼费金额" step="0.01" value="9"></div>
+    <div class="modal-acts">
+      <button class="btn btn-o" onclick="closeModal('mMerchant')">取消</button>
+      <button class="btn btn-p" onclick="saveMerchant()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 打印弹窗 -->
+<div id="mPrint" class="modal-ov">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#x1F5A8;&#xFE0F; 打印工资单</div>
+    <div class="fg"><label class="fl">选择司机</label><select id="printSel"></select></div>
+    <div class="modal-acts">
+      <button class="btn btn-o" onclick="closeModal('mPrint')">取消</button>
+      <button class="btn btn-p" onclick="doPrint()">打印</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 默认数据 =====
+const DEF_PRICES = {"虎门":1.25,"凤岗":1.22,"沙田":1.22,"道窖":1.22,"洪梅":1.22,"麻涌":1.22,"中堂":1.22,"高埗":1.22,"望牛墩":1.22,"塘厦":1.20,"谢岗":1.18,"清溪":1.18,"长安":1.12,"厚街":1.12,"樟木头":1.10,"大岭山":1.10,"南城":1.10,"万江":1.10,"莞城":1.10,"石碣":1.08,"石龙":1.08,"茶山":1.08,"石排":1.08,"企石":1.08,"横沥":1.08,"桥头":1.08,"东坑":1.08,"常平":1.08,"寮步":1.08,"大朗":1.08,"黄江":1.08,"东城":1.08};
+const DEF_DELIVERIES = [
+  {driver:"祝灵兰",date:"2026-05-02",area:"虎门",qty:241},{driver:"祝灵兰",date:"2026-05-06",area:"清溪",qty:248},{driver:"祝灵兰",date:"2026-05-07",area:"樟木头",qty:235},{driver:"祝灵兰",date:"2026-05-08",area:"凤岗",qty:242},{driver:"祝灵兰",date:"2026-05-09",area:"樟木头",qty:238},{driver:"祝灵兰",date:"2026-05-10",area:"大岭山",qty:210},{driver:"祝灵兰",date:"2026-05-11",area:"常平",qty:223},{driver:"祝灵兰",date:"2026-05-11",area:"大朗",qty:241},{driver:"祝灵兰",date:"2026-05-12",area:"长安",qty:241},{driver:"祝灵兰",date:"2026-05-13",area:"长安",qty:221},{driver:"祝灵兰",date:"2026-05-13",area:"大朗",qty:229},
+  {driver:"邓新柠",date:"2026-05-04",area:"清溪",qty:270},{driver:"邓新柠",date:"2026-05-05",area:"凤岗",qty:239},{driver:"邓新柠",date:"2026-05-06",area:"长安",qty:210},{driver:"邓新柠",date:"2026-05-06",area:"寮步",qty:260},{driver:"邓新柠",date:"2026-05-07",area:"桥头",qty:261},{driver:"邓新柠",date:"2026-05-07",area:"塘厦",qty:242},{driver:"邓新柠",date:"2026-05-08",area:"樟木头",qty:235},{driver:"邓新柠",date:"2026-05-09",area:"长安",qty:225},{driver:"邓新柠",date:"2026-05-10",area:"樟木头",qty:210},{driver:"邓新柠",date:"2026-05-10",area:"洪梅",qty:262},{driver:"邓新柠",date:"2026-05-11",area:"谢岗",qty:284},{driver:"邓新柠",date:"2026-05-12",area:"万江",qty:228},{driver:"邓新柠",date:"2026-05-13",area:"塘厦",qty:202},{driver:"邓新柠",date:"2026-05-13",area:"虎门",qty:217},
+  {driver:"邵海良",date:"2026-04-30",area:"横沥",qty:273},{driver:"邵海良",date:"2026-05-02",area:"寮步",qty:246},{driver:"邵海良",date:"2026-05-03",area:"大岭山",qty:240},{driver:"邵海良",date:"2026-05-04",area:"樟木头",qty:253},{driver:"邵海良",date:"2026-05-05",area:"塘厦",qty:241},{driver:"邵海良",date:"2026-05-05",area:"大岭山",qty:250},{driver:"邵海良",date:"2026-05-07",area:"塘厦",qty:217},{driver:"邵海良",date:"2026-05-08",area:"虎门",qty:217},{driver:"邵海良",date:"2026-05-08",area:"长安",qty:227},{driver:"邵海良",date:"2026-05-09",area:"樟木头",qty:230},
+  {driver:"黄世宝",date:"2026-05-05",area:"寮步",qty:265},{driver:"黄世宝",date:"2026-05-06",area:"谢岗",qty:245},{driver:"黄世宝",date:"2026-05-07",area:"黄江",qty:266},{driver:"黄世宝",date:"2026-05-08",area:"樟木头",qty:240},{driver:"黄世宝",date:"2026-05-09",area:"高埗",qty:240},{driver:"黄世宝",date:"2026-05-11",area:"万江",qty:232},{driver:"黄世宝",date:"2026-05-13",area:"清溪",qty:244},{driver:"黄世宝",date:"2026-05-13",area:"谢岗",qty:213},
+  {driver:"韦志长",date:"2026-05-11",area:"横沥",qty:230},{driver:"韦志长",date:"2026-05-11",area:"寮步",qty:239},{driver:"韦志长",date:"2026-05-13",area:"常平",qty:280},
+  {driver:"李树驹",date:"2026-05-11",area:"虎门",qty:202},{driver:"李树驹",date:"2026-05-12",area:"黄江",qty:244},{driver:"李树驹",date:"2026-05-13",area:"塘厦",qty:230}
+];
+const DEF_VEHICLES = [
+  {plate:"粤S·12345",model:"4.2米箱式",monthlyRent:3000,deposit:10000,purchaseDate:"2025-01-01",currentDriver:"邓新柠",manager:"张三",remark:"保险2026-12到期"},
+  {plate:"粤S·67890",model:"电动面包车",monthlyRent:2500,deposit:8000,purchaseDate:"2025-03-15",currentDriver:"祝灵兰",manager:"李四",remark:""}
+];
+const DEF_PENALTIES = [
+  {id:"p1",driver:"邓新柠",date:"2026-05-10",amount:50,reason:"迟到"},
+  {id:"p2",driver:"祝灵兰",date:"2026-05-12",amount:30,reason:"货物轻微破损"}
+];
+
+// ===== 全局状态 =====
+let prices={}, driverRate=0.60, deliveries=[], vehicles=[], penalties=[], merchants=[];
+const TAX=0.06;
+let editDeliveryIdx=null, editVehiclePlate=null, editPenaltyId=null, editMerchantId=null;
+
+// 默认门店数据
+const DEF_MERCHANTS = [
+  {id:'mc1', name:'仲恺德润店', hasUpstairs:true, upstairsFee:9},
+  {id:'mc2', name:'港惠店', hasUpstairs:true, upstairsFee:9},
+  {id:'mc3', name:'世贸中心店', hasUpstairs:false, upstairsFee:0},
+  {id:'mc4', name:'常平大道店', hasUpstairs:false, upstairsFee:0}
+];
+
+// ===== 存储 =====
+function load(){
+  try{
+    const s=localStorage.getItem('cpApp');
+    if(s){
+      const d=JSON.parse(s);
+      // 有存储记录时，直接使用存储数据（即使为空数组也尊重用户操作）
+      deliveries=d.deliveries||[];
+      prices=d.prices||{};
+      driverRate=d.driverRate??0.60;
+      vehicles=(d.vehicles||[]).map(v=>({...v,manager:v.manager||''}));
+      penalties=d.penalties||[];
+      merchants=d.merchants||[];
+      // 仅补充缺失的配置项（不覆盖已有数据）
+      if(!Object.keys(prices).length) prices=JSON.parse(JSON.stringify(DEF_PRICES));
+      if(!merchants.length) merchants=JSON.parse(JSON.stringify(DEF_MERCHANTS));
+      return; // 有存储数据，直接返回，不加载默认示例
+    }
+  }catch(e){}
+  // 首次使用（无任何存储记录）：加载默认示例数据
+  deliveries=JSON.parse(JSON.stringify(DEF_DELIVERIES));
+  prices=JSON.parse(JSON.stringify(DEF_PRICES));
+  vehicles=JSON.parse(JSON.stringify(DEF_VEHICLES));
+  penalties=JSON.parse(JSON.stringify(DEF_PENALTIES));
+  merchants=JSON.parse(JSON.stringify(DEF_MERCHANTS));
+}
+function save(){localStorage.setItem('cpApp',JSON.stringify({deliveries,prices,driverRate,vehicles,penalties,merchants}));}
+function saveRefresh(){save();renderAll();}
+
+// ===== 业务计算 =====
+function areaPrice(a){return prices[a]||1.08;}
+// 计算配送单的上楼费（从门店维护表中匹配）
+function calcUpstairsFee(d){
+  if(!d.merchantList||!d.merchantList.length) return 0;
+  let fee=0;
+  d.merchantList.forEach(name=>{
+    const m=merchants.find(mc=>mc.name===name.trim());
+    if(m&&m.hasUpstairs) fee+=(m.upstairsFee||0);
+  });
+  return fee;
+}
+// 运价 = 地区单价×件数 + 上楼费
+function calcProfit(d){
+  const upstairs=calcUpstairsFee(d);
+  const rev=areaPrice(d.area)*d.qty+upstairs;
+  const cost=driverRate*d.qty;
+  const tax=rev*TAX;
+  return{rev,cost,tax,profit:rev-cost-tax,upstairs};
+}
+function driverSummary(){
+  const m=new Map();
+  deliveries.forEach(d=>{
+    if(!m.has(d.driver))m.set(d.driver,{name:d.driver,qty:0,rev:0,cost:0,profit:0,rows:[]});
+    const p=calcProfit(d),r=m.get(d.driver);
+    r.qty+=d.qty;r.rev+=p.rev;r.cost+=p.cost;r.profit+=p.profit;r.rows.push({...d,...p});
+  });
+  return Array.from(m.values());
+}
+function globalSummary(){let q=0,r=0,c=0,p=0;deliveries.forEach(d=>{const x=calcProfit(d);q+=d.qty;r+=x.rev;c+=x.cost;p+=x.profit;});return{q,r,c,p};}
+function allDrivers(){return[...new Set(deliveries.map(d=>d.driver))].sort();}
+function allAreas(){return Object.keys(prices).sort();}
+function monthlyBills(){
+  const m=new Map();
+  deliveries.forEach(d=>{
+    if(!d.date)return;
+    const ym=d.date.slice(0,7),k=d.driver+'_'+ym;
+    if(!m.has(k))m.set(k,{driver:d.driver,ym,qty:0,rev:0,cost:0,profit:0,pens:[]});
+    const p=calcProfit(d),r=m.get(k);r.qty+=d.qty;r.rev+=p.rev;r.cost+=p.cost;r.profit+=p.profit;
+  });
+  penalties.forEach(p=>{
+    if(!p.date)return;
+    const ym=p.date.slice(0,7),k=p.driver+'_'+ym;
+    if(!m.has(k))m.set(k,{driver:p.driver,ym,qty:0,rev:0,cost:0,profit:0,pens:[]});
+    m.get(k).pens.push(p);
+  });
+  return Array.from(m.values()).map(r=>{const tp=r.pens.reduce((s,p)=>s+(p.amount||0),0);return{...r,totalPen:tp,actual:r.cost-tp};}).sort((a,b)=>a.ym===b.ym?a.driver.localeCompare(b.driver):b.ym.localeCompare(a.ym));
+}
+
+// ===== 渲染 =====
+function renderHero(){const g=globalSummary();$('hQty').textContent=g.q;$('hRev').textContent=g.r.toFixed(0);$('hCost').textContent=g.c.toFixed(0);$('hProfit').textContent=g.p.toFixed(0);}
+
+function renderDriver(){
+  const ds=driverSummary();
+  if(!ds.length){$('pDriver').innerHTML='<div class="card"><div class="empty">暂无配送数据</div></div>';return;}
+  $('pDriver').innerHTML=ds.map(d=>`
+    <div class="card">
+      <div class="driver-header"><span class="driver-name">${d.name}</span><span class="driver-profit">&#x1F4B0; ${d.profit.toFixed(2)}元</span></div>
+      <div class="driver-meta"><span>&#x1F4E6; ${d.qty}件</span><span>&#x1F4B5; 运价 ${d.rev.toFixed(2)}</span><span>&#x1F464; 成本 ${d.cost.toFixed(2)}</span></div>
+      <div>
+        ${d.rows.map((r,i)=>`
+          <div class="drow">
+            <span class="drow-area">${r.area}</span>
+            <span class="drow-date">${r.date}</span>
+            <span class="drow-qty">${r.qty}件</span>
+            ${r.upstairs>0?`<span style="color:#e67e22;font-size:11px;min-width:52px;text-align:right;">+楼${r.upstairs.toFixed(0)}</span>`:'<span style="min-width:52px;"></span>'}
+            <span class="drow-profit">运${r.rev.toFixed(2)}</span>
+            <span class="drow-acts">
+              <button class="btn btn-o btn-sm" onclick="openEditDelivery(${deliveries.indexOf(r)})">编辑</button>
+              <button class="btn btn-d btn-sm" onclick="delDelivery(${deliveries.indexOf(r)})">删</button>
+            </span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderRegion(){
+  const sorted=allAreas();
+  $('pRegion').innerHTML=`
+    <div class="card">
+      <div class="card-title">&#x1F4CD; 地区单价管理</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="text" id="newAN" placeholder="新地区名称" style="flex:2;min-width:100px;">
+        <input type="number" id="newAP" step="0.01" placeholder="单价" style="flex:1;min-width:70px;">
+        <button class="btn btn-p btn-sm" onclick="addArea()">&#x2795; 添加</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>地区</th><th>单价(元)</th><th>操作</th></tr></thead>
+          <tbody>${sorted.map(r=>`<tr><td>${r}</td><td><input type="number" step="0.01" class="pi" value="${prices[r]}" data-r="${r}" onchange="updatePrice(this)"></td><td><button class="btn btn-d btn-sm" onclick="delArea('${r}')">删除</button></td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F46E; 司机结算单价</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="white-space:nowrap;">当前单价：</span>
+        <input type="number" step="0.01" id="drInput" value="${driverRate}" style="max-width:120px;">
+        <button class="btn btn-p btn-sm" onclick="updateDriverRate()">保存</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2);">税率：${TAX*100}%（自动扣除）</div>
+    </div>
+  `;
+  refreshDatalist();
+}
+
+function renderRecords(){
+  const c=$('pRecords');
+  const yms=[...new Set(deliveries.filter(d=>d.date).map(d=>d.date.slice(0,7)))].sort().reverse();
+  const ads=allDrivers(),aas=allAreas();
+  function getFiltered(){
+    const ym=$('rfYm')?.value||'',dr=$('rfDr')?.value||'',ar=$('rfAr')?.value||'';
+    return deliveries.filter(d=>(!ym||d.date?.startsWith(ym))&&(!dr||d.driver===dr)&&(!ar||d.area===ar));
+  }
+  function tbl(list){
+    if(!list.length)return'<div class="empty">暂无匹配记录</div>';
+    return`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>日期</th><th>司机</th><th>地区</th><th>件数</th><th>上楼费</th><th>运价</th><th>成本</th><th>利润</th><th>操作</th></tr></thead><tbody>
+      ${list.map(d=>{const p=calcProfit(d),idx=deliveries.indexOf(d);return`<tr><td>${d.date}</td><td>${d.driver}</td><td>${d.area}</td><td>${d.qty}</td><td class="${p.upstairs>0?'c-o':''}">${p.upstairs>0?p.upstairs.toFixed(2):'-'}</td><td>${p.rev.toFixed(2)}</td><td>${p.cost.toFixed(2)}</td><td class="${p.profit>=0?'c-g':'c-r'}">${p.profit.toFixed(2)}</td><td style="white-space:nowrap"><button class="btn btn-o btn-sm" onclick="openEditDelivery(${idx})">编辑</button> <button class="btn btn-d btn-sm" onclick="delDelivery(${idx})">删</button></td></tr>`;}).join('')}
+    </tbody></table></div>`;
+  }
+  function refresh(){
+    const fl=getFiltered();
+    c.innerHTML=`<div class="card">
+      <div class="card-title">&#x1F4CB; 配送明细记录</div>
+      <div class="filter-bar">
+        <div class="fi"><label>月度</label><select id="rfYm"><option value="">全部</option>${yms.map(y=>`<option value="${y}">${y}</option>`).join('')}</select></div>
+        <div class="fi"><label>司机</label><select id="rfDr"><option value="">全部</option>${ads.map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
+        <div class="fi"><label>地区</label><select id="rfAr"><option value="">全部</option>${aas.map(a=>`<option value="${a}">${a}</option>`).join('')}</select></div>
+        <div style="display:flex;gap:6px;align-items:flex-end;"><button class="btn btn-p btn-sm" id="rfApply">筛选</button><button class="btn btn-g btn-sm" id="rfReset">重置</button></div>
+      </div>
+      ${tbl(fl)}
+    </div>`;
+    $('rfApply')?.addEventListener('click',refresh);
+    $('rfReset')?.addEventListener('click',()=>{['rfYm','rfDr','rfAr'].forEach(id=>{const el=$(id);if(el)el.value='';});refresh();});
+  }
+  refresh();
+}
+
+function renderVehicle(){
+  const c=$('pVehicle');
+  if(!vehicles.length){c.innerHTML=`<div class="card"><div class="card-title">&#x1F69B; 车辆管理</div><div class="empty">暂无车辆</div><button class="btn btn-p btn-sm" onclick="openAddVehicle()">&#x2795; 添加车辆</button></div>`;return;}
+  c.innerHTML=`<div class="card">
+    <div class="card-title">&#x1F69B; 车辆管理 <button class="btn btn-p btn-sm" onclick="openAddVehicle()">&#x2795; 添加</button></div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>车牌</th><th>车型</th><th>月租</th><th>押金</th><th>司机</th><th>负责人</th><th>备注</th><th>操作</th></tr></thead>
+      <tbody>${vehicles.map(v=>`<tr><td>${v.plate}</td><td>${v.model}</td><td>${v.monthlyRent||'-'}</td><td>${v.deposit||'-'}</td><td>${v.currentDriver||'-'}</td><td>${v.manager||'-'}</td><td style="max-width:120px;font-size:12px;">${v.remark||'-'}</td><td style="white-space:nowrap"><button class="btn btn-o btn-sm" onclick="openEditVehicle('${v.plate}')">编辑</button> <button class="btn btn-d btn-sm" onclick="delVehicle('${v.plate}')">删</button></td></tr>`).join('')}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function renderSalary(){
+  const c=$('pSalary');
+  const bills=monthlyBills();
+  if(!bills.length){c.innerHTML='<div class="card"><div class="empty">暂无数据</div></div>';return;}
+  const yms=[...new Set(bills.map(b=>b.ym))].sort().reverse();
+  const ads=allDrivers();
+  function getFiltered(){const ym=$('sfYm')?.value||'',dr=$('sfDr')?.value||'';return bills.filter(b=>(!ym||b.ym===ym)&&(!dr||b.driver===dr));}
+  function tbl(list){
+    if(!list.length)return'<div class="empty">暂无匹配</div>';
+    return`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>司机</th><th>月份</th><th>件数</th><th>运价</th><th>应发</th><th>扣罚</th><th>实发</th><th>操作</th></tr></thead><tbody>
+      ${list.map(b=>`<tr><td>${b.driver}</td><td>${b.ym}</td><td>${b.qty}</td><td>${b.rev.toFixed(2)}</td><td>${b.cost.toFixed(2)}</td><td class="c-r">${b.totalPen.toFixed(2)}</td><td class="c-g">${b.actual.toFixed(2)}</td><td><button class="btn btn-p btn-sm" onclick="printBill('${b.driver}','${b.ym}')">&#x1F4C4; 打印</button></td></tr>`).join('')}
+    </tbody></table></div>`;
+  }
+  function refresh(){
+    const fl=getFiltered();
+    c.innerHTML=`<div class="card">
+      <div class="card-title">&#x1F4B0; 司机月度工资账单</div>
+      <div class="filter-bar">
+        <div class="fi"><label>月度</label><select id="sfYm"><option value="">全部</option>${yms.map(y=>`<option value="${y}">${y}</option>`).join('')}</select></div>
+        <div class="fi"><label>司机</label><select id="sfDr"><option value="">全部</option>${ads.map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
+        <div style="display:flex;gap:6px;align-items:flex-end;"><button class="btn btn-p btn-sm" id="sfApply">筛选</button><button class="btn btn-g btn-sm" id="sfReset">重置</button></div>
+      </div>
+      ${tbl(fl)}
+    </div>`;
+    $('sfApply')?.addEventListener('click',refresh);
+    $('sfReset')?.addEventListener('click',()=>{['sfYm','sfDr'].forEach(id=>{const el=$(id);if(el)el.value='';});refresh();});
+  }
+  refresh();
+}
+
+function renderPenalty(){
+  const c=$('pPenalty');
+  const ads=allDrivers();
+  function getFiltered(){const dr=$('pfDr')?.value||'';return penalties.filter(p=>!dr||p.driver===dr);}
+  function tbl(list){
+    if(!list.length)return'<div class="empty">暂无扣罚记录</div>';
+    return`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>日期</th><th>司机</th><th>金额</th><th>原因</th><th>操作</th></tr></thead><tbody>
+      ${list.map(p=>`<tr><td>${p.date}</td><td>${p.driver}</td><td class="c-r">${p.amount.toFixed(2)}</td><td>${p.reason||'-'}</td><td style="white-space:nowrap"><button class="btn btn-o btn-sm" onclick="openEditPenalty('${p.id}')">编辑</button> <button class="btn btn-d btn-sm" onclick="delPenalty('${p.id}')">删</button></td></tr>`).join('')}
+    </tbody></table></div>`;
+  }
+  function refresh(){
+    c.innerHTML=`<div class="card">
+      <div class="card-title">&#x26A0;&#xFE0F; 扣罚记录 <button class="btn btn-p btn-sm" onclick="openAddPenalty()">&#x2795; 添加</button></div>
+      <div class="filter-bar">
+        <div class="fi"><label>司机</label><select id="pfDr"><option value="">全部</option>${ads.map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
+        <div style="display:flex;gap:6px;align-items:flex-end;"><button class="btn btn-p btn-sm" id="pfApply">筛选</button><button class="btn btn-g btn-sm" id="pfReset">重置</button></div>
+      </div>
+      ${tbl(getFiltered())}
+    </div>`;
+    $('pfApply')?.addEventListener('click',refresh);
+    $('pfReset')?.addEventListener('click',()=>{const el=$('pfDr');if(el)el.value='';refresh();});
+  }
+  refresh();
+}
+
+function renderMerchant(){
+  const c=$('pMerchant');
+  function tbl(){
+    if(!merchants.length)return'<div class="empty">暂无门店，点击右上角添加</div>';
+    return`<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>门店名称</th><th>收取上楼费</th><th>上楼费(元/次)</th><th>操作</th></tr></thead>
+      <tbody>${merchants.map(m=>`<tr>
+        <td>${m.name}</td>
+        <td>${m.hasUpstairs?'<span class="badge bg-g">是</span>':'<span class="badge bg-r">否</span>'}</td>
+        <td class="${m.hasUpstairs?'c-o':''}">${m.hasUpstairs?(m.upstairsFee||0).toFixed(2):'-'}</td>
+        <td style="white-space:nowrap"><button class="btn btn-o btn-sm" onclick="openEditMerchant('${m.id}')">编辑</button> <button class="btn btn-d btn-sm" onclick="delMerchant('${m.id}')">删</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+  c.innerHTML=`<div class="card">
+    <div class="card-title">&#x1F3EA; 上楼门店维护 <button class="btn btn-p btn-sm" onclick="openAddMerchant()">&#x2795; 添加</button></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">配置需要收取上楼费的门店，新增配送单时选择门店后运价自动加上上楼费</div>
+    ${tbl()}
+  </div>`;
+}
+
+function renderToolBar(){
+  // 工具栏放在司机面板底部
+  const tb=document.createElement('div');
+  tb.className='tool-bar';
+  tb.innerHTML=`
+    <button class="btn btn-g" onclick="exportTxt()">&#x1F4C4; 导出报表</button>
+    <button class="btn btn-g" onclick="exportJson()">&#x1F4BE; 备份数据</button>
+    <button class="btn btn-g" onclick="$('fileIn').click()">&#x1F4C2; 恢复备份</button>
+    <button class="btn btn-g" onclick="showPrintModal()">&#x1F5A8;&#xFE0F; 打印工资单</button>
+    <button class="btn btn-d" onclick="resetData()">&#x1F504; 重置示例</button>
+  `;
+  $('pDriver').appendChild(tb);
+}
+
+function renderAll(){
+  renderHero();
+  renderDriver();
+  renderRegion();
+  renderMerchant();
+  renderRecords();
+  renderVehicle();
+  renderSalary();
+  renderPenalty();
+  renderToolBar();
+  refreshDatalist();
+}
+
+function refreshDatalist(){
+  const ads=allDrivers(),aas=allAreas();
+  ['dlDriver','dlPDriver'].forEach(id=>{const el=$(id);if(el)el.innerHTML=ads.map(d=>`<option>${d}</option>`).join('');});
+  const da=$(id='dlArea');if(da)da.innerHTML=aas.map(a=>`<option>${a}</option>`).join('');
+  const dm=$('dlManager');if(dm){const ms=new Set(vehicles.map(v=>v.manager).filter(Boolean));dm.innerHTML=[...new Set([...ads,...ms])].sort().map(n=>`<option>${n}</option>`).join('');}
+  const vd=$('vDriver');if(vd){vd.innerHTML='<option value="">未分配</option>'+ads.map(d=>`<option value="${d}">${d}</option>`).join('');}
+  const dmc=$('dlMerchant');if(dmc)dmc.innerHTML=merchants.map(m=>`<option value="${m.name}">${m.name}${m.hasUpstairs?' (上楼费'+m.upstairsFee+'元)':''}</option>`).join('');
+}
+
+// ===== 配送单 CRUD =====
+window.openEditDelivery=function(idx){
+  editDeliveryIdx=idx;
+  const d=deliveries[idx];
+  $('mAddTitle').textContent='✏️ 编辑配送单';
+  $('aDate').value=d.date;$('aDriver').value=d.driver;$('aArea').value=d.area;$('aQty').value=d.qty;
+  $('aMerchants').value=(d.merchantList||[]).join(',');
+  openModal('mAdd');
+};
+window.saveDelivery=function(){
+  const date=$('aDate').value,driver=$('aDriver').value.trim(),area=$('aArea').value.trim(),qty=parseInt($('aQty').value);
+  if(!date||!driver||!area||isNaN(qty)||qty<=0){toast('请完整填写所有字段',true);return;}
+  if(!prices[area]){if(confirm(`地区"${area}"不在报价列表，是否添加默认单价1.08元？`))prices[area]=1.08;else return;}
+  const mcStr=$('aMerchants').value.trim();
+  const merchantList=mcStr?mcStr.split(',').map(s=>s.trim()).filter(s=>s):[];
+  if(editDeliveryIdx!==null){deliveries[editDeliveryIdx]={...deliveries[editDeliveryIdx],date,driver,area,qty,merchantList};}
+  else{deliveries.push({date,driver,area,qty,merchantList});}
+  editDeliveryIdx=null;
+  $('mAddTitle').textContent='➕ 新增配送单';
+  ['aDate','aDriver','aArea','aQty','aMerchants'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  closeModal('mAdd');saveRefresh();toast('配送单已保存');
+};
+window.delDelivery=function(idx){if(confirm('确定删除此配送记录？')){deliveries.splice(idx,1);saveRefresh();toast('已删除');}};
+
+// ===== 地区 CRUD =====
+window.updatePrice=function(input){const r=input.dataset.r,v=parseFloat(input.value);if(!isNaN(v)&&v>0){prices[r]=v;save();toast(`${r} 已更新为 ${v} 元`);}else{input.value=prices[r];toast('请输入有效价格',true);}};
+window.updateDriverRate=function(){const v=parseFloat($('drInput').value);if(!isNaN(v)&&v>=0){driverRate=v;saveRefresh();toast(`司机单价已更新为 ${v} 元/件`);}else toast('请输入有效单价',true);};
+window.addArea=function(){const n=$('newAN').value.trim(),p=parseFloat($('newAP').value);if(!n||isNaN(p)||p<=0){toast('请输入地区名称和正确单价',true);return;}if(prices[n]){toast(`地区${n}已存在`,true);return;}prices[n]=p;saveRefresh();$('newAN').value='';$('newAP').value='';toast(`已添加地区 ${n}`);};
+window.delArea=function(r){if(confirm(`确定删除地区"${r}"吗？`)){delete prices[r];saveRefresh();toast(`已删除地区 ${r}`);}};
+
+// ===== 车辆 CRUD =====
+window.openAddVehicle=function(){editVehiclePlate=null;$('mVehicleTitle').textContent='🚛 添加车辆';['vPlate','vModel','vRent','vDeposit','vDate','vRemark','vManager'].forEach(id=>{const el=$(id);if(el)el.value='';});refreshDatalist();$('vDriver').value='';openModal('mVehicle');};
+window.openEditVehicle=function(plate){const v=vehicles.find(x=>x.plate===plate);if(!v)return;editVehiclePlate=plate;$('mVehicleTitle').textContent='✏️ 编辑车辆';$('vPlate').value=v.plate;$('vModel').value=v.model;$('vRent').value=v.monthlyRent||'';$('vDeposit').value=v.deposit||'';$('vDate').value=v.purchaseDate||'';$('vRemark').value=v.remark||'';$('vManager').value=v.manager||'';refreshDatalist();$('vDriver').value=v.currentDriver||'';openModal('mVehicle');};
+window.saveVehicle=function(){const plate=$('vPlate').value.trim(),model=$('vModel').value.trim();if(!plate||!model){toast('车牌号和车型不能为空',true);return;}const obj={plate,model,monthlyRent:parseFloat($('vRent').value)||0,deposit:parseFloat($('vDeposit').value)||0,purchaseDate:$('vDate').value,currentDriver:$('vDriver').value,manager:$('vManager').value.trim(),remark:$('vRemark').value};if(editVehiclePlate===null){if(vehicles.some(v=>v.plate===plate)){toast('车牌号已存在',true);return;}vehicles.push(obj);}else{const i=vehicles.findIndex(v=>v.plate===editVehiclePlate);if(i!==-1)vehicles[i]=obj;}saveRefresh();closeModal('mVehicle');toast('车辆信息已保存');};
+window.delVehicle=function(plate){if(confirm(`确定删除车牌${plate}的车辆？`)){vehicles=vehicles.filter(v=>v.plate!==plate);saveRefresh();toast('已删除车辆');}};
+
+// ===== 扣罚 CRUD =====
+window.openAddPenalty=function(){editPenaltyId=null;$('mPenaltyTitle').textContent='⚠️ 添加扣罚';['pDate','pDriver','pAmount','pReason'].forEach(id=>{const el=$(id);if(el)el.value='';});refreshDatalist();openModal('mPenalty');};
+window.openEditPenalty=function(id){const p=penalties.find(x=>x.id===id);if(!p)return;editPenaltyId=id;$('mPenaltyTitle').textContent='✏️ 编辑扣罚';$('pDate').value=p.date;$('pDriver').value=p.driver;$('pAmount').value=p.amount;$('pReason').value=p.reason||'';refreshDatalist();openModal('mPenalty');};
+window.savePenalty=function(){const date=$('pDate').value,driver=$('pDriver').value.trim(),amount=parseFloat($('pAmount').value),reason=$('pReason').value.trim();if(!date||!driver||isNaN(amount)||amount<=0){toast('请完整填写日期、司机和有效金额',true);return;}if(editPenaltyId===null){penalties.push({id:'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),date,driver,amount,reason});}else{const i=penalties.findIndex(p=>p.id===editPenaltyId);if(i!==-1)penalties[i]={...penalties[i],date,driver,amount,reason};}saveRefresh();closeModal('mPenalty');toast('扣罚记录已保存');};
+window.delPenalty=function(id){if(confirm('确定删除此扣罚记录？')){penalties=penalties.filter(p=>p.id!==id);saveRefresh();toast('已删除');}};
+
+// ===== 上楼门店 CRUD =====
+window.openAddMerchant=function(){
+  editMerchantId=null;
+  $('mMerchantTitle').textContent='🏪 添加门店';
+  $('mcName').value='';$('mcHasUpstairs').checked=false;$('mcFee').value=9;
+  openModal('mMerchant');
+};
+window.openEditMerchant=function(id){
+  const m=merchants.find(x=>x.id===id);if(!m)return;
+  editMerchantId=id;
+  $('mMerchantTitle').textContent='✏️ 编辑门店';
+  $('mcName').value=m.name;$('mcHasUpstairs').checked=m.hasUpstairs;$('mcFee').value=m.upstairsFee||9;
+  openModal('mMerchant');
+};
+window.saveMerchant=function(){
+  const name=$('mcName').value.trim();
+  if(!name){toast('门店名称不能为空',true);return;}
+  const hasUpstairs=$('mcHasUpstairs').checked;
+  const upstairsFee=hasUpstairs?parseFloat($('mcFee').value)||0:0;
+  if(editMerchantId===null){
+    if(merchants.some(m=>m.name===name)){toast('门店名称已存在',true);return;}
+    merchants.push({id:'mc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),name,hasUpstairs,upstairsFee});
+  }else{
+    const i=merchants.findIndex(m=>m.id===editMerchantId);
+    if(i!==-1)merchants[i]={...merchants[i],name,hasUpstairs,upstairsFee};
+  }
+  saveRefresh();closeModal('mMerchant');toast('门店信息已保存');
+};
+window.delMerchant=function(id){if(confirm('确定删除此门店？删除后相关配送单的上楼费将不再计算。')){merchants=merchants.filter(m=>m.id!==id);saveRefresh();toast('已删除');}};
+
+// ===== 打印 =====
+window.printBill=function(driver,ym){
+  const bills=monthlyBills(),rec=bills.find(b=>b.driver===driver&&b.ym===ym);if(!rec)return;
+  const rows=deliveries.filter(d=>d.driver===driver&&d.date?.startsWith(ym));
+  const pens=penalties.filter(p=>p.driver===driver&&p.date?.startsWith(ym));
+  let h=`<html><head><title>${driver}_${ym}_工资账单</title><style>body{font-family:sans-serif;padding:20px;}table,th,td{border:1px solid #999;border-collapse:collapse;padding:6px;text-align:center;}h2{text-align:center;}</style></head><body>
+    <h2>司机工资月账单</h2><p><b>司机：</b>${driver}</p><p><b>月份：</b>${ym}</p>
+    <p><b>总件数：</b>${rec.qty}件</p><p><b>总运价：</b>${rec.rev.toFixed(2)}元</p>
+    <p><b>应发工资（${driverRate}元/件）：</b>${rec.cost.toFixed(2)}元</p>
+    <h3>扣罚明细</h3>`;
+  if(pens.length){h+=`<table><thead><tr><th>日期</th><th>金额</th><th>原因</th></tr></thead><tbody>${pens.map(p=>`<tr><td>${p.date}</td><td>${p.amount.toFixed(2)}</td><td>${p.reason||'-'}</td></tr>`).join('')}</tbody></table><p><b>扣罚总额：</b>${rec.totalPen.toFixed(2)}元</p>`;}
+  else h+=`<p>无扣罚记录</p>`;
+  h+=`<p><b>实发工资：</b>${rec.actual.toFixed(2)}元</p><h3>配送明细</h3>
+    <table><thead><tr><th>日期</th><th>地区</th><th>件数</th><th>运价</th><th>成本</th><th>利润</th></tr></thead><tbody>
+    ${rows.map(d=>{const p=calcProfit(d);return`<tr><td>${d.date}</td><td>${d.area}</td><td>${d.qty}</td><td>${p.rev.toFixed(2)}</td><td>${p.cost.toFixed(2)}</td><td>${p.profit.toFixed(2)}</td></tr>`;}).join('')}
+    </tbody></table><p>打印时间：${new Date().toLocaleString()}</p></body></html>`;
+  const w=window.open('','_blank');w.document.write(h);w.document.close();w.print();
+};
+window.showPrintModal=function(){const ds=driverSummary();$('printSel').innerHTML='<option value="all">全部司机</option>'+ds.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');openModal('mPrint');};
+window.doPrint=function(){
+  const sel=$('printSel').value,ds=driverSummary(),toPrint=sel==='all'?ds:ds.filter(d=>d.name===sel);
+  if(!toPrint.length){toast('无数据',true);return;}
+  let h=`<html><head><title>司机工资单</title><style>body{font-family:sans-serif;padding:20px;}table,th,td{border:1px solid #999;border-collapse:collapse;padding:6px;text-align:center;}h2{text-align:center;}</style></head><body><h2>司机工资单（全部时间）</h2><p>生成时间：${new Date().toLocaleString()}</p>`;
+  toPrint.forEach(d=>{h+=`<div style="margin-bottom:30px;"><h3>司机：${d.name}</h3><p>总件数：${d.qty}件</p><p>总运价：${d.rev.toFixed(2)}元</p><p>司机成本（${driverRate}元/件）：${d.cost.toFixed(2)}元</p><p>净利润：${d.profit.toFixed(2)}元</p><table><thead><tr><th>日期</th><th>地区</th><th>件数</th><th>运价</th><th>成本</th><th>利润</th></tr></thead><tbody>${d.rows.map(r=>{const p=calcProfit(r);return`<tr><td>${r.date}</td><td>${r.area}</td><td>${r.qty}</td><td>${p.rev.toFixed(2)}</td><td>${p.cost.toFixed(2)}</td><td>${p.profit.toFixed(2)}</td></tr>`;}).join('')}</tbody></table></div>`;});
+  h+=`</body></html>`;
+  const w=window.open('','_blank');w.document.write(h);w.document.close();w.print();closeModal('mPrint');
+};
+
+// ===== 导出/备份 =====
+window.exportTxt=function(){
+  const g=globalSummary();
+  let c=`===== 城配利润报表 =====\n生成时间：${new Date().toLocaleString()}\n总件数：${g.q}\n总运价：${g.r.toFixed(2)}\n司机成本：${g.c.toFixed(2)}\n总利润：${g.p.toFixed(2)}\n\n司机明细：\n`;
+  driverSummary().forEach(d=>{c+=`${d.name}：${d.qty}件，利润 ${d.profit.toFixed(2)}元\n`;});
+  c+=`\n地区单价：\n`;allAreas().forEach(r=>{c+=`${r}：${prices[r]}元/件\n`;});
+  c+=`\n车辆信息：\n`;vehicles.forEach(v=>{c+=`${v.plate} | ${v.model} | 月租:${v.monthlyRent} | 司机:${v.currentDriver||'无'} | 负责人:${v.manager||'无'}\n`;});
+  c+=`\n扣罚记录：\n`;penalties.forEach(p=>{c+=`${p.date} | ${p.driver} | 扣罚${p.amount}元 | ${p.reason||''}\n`;});
+  dl(new Blob([c],{type:'text/plain'}),`城配利润报表_${new Date().toISOString().slice(0,10)}.txt`);toast('已导出报表');
+};
+window.exportJson=function(){dl(new Blob([JSON.stringify({deliveries,prices,driverRate,vehicles,penalties,merchants,exportTime:new Date().toISOString()},null,2)],{type:'application/json'}),`城配备份_${new Date().toISOString().slice(0,19)}.json`);toast('已导出备份');};
+window.importJson=function(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();r.onload=function(ev){
+    try{const b=JSON.parse(ev.target.result);if(b.deliveries&&b.prices&&typeof b.driverRate==='number'){deliveries=b.deliveries;prices=b.prices;driverRate=b.driverRate;vehicles=b.vehicles||[];penalties=b.penalties||[];merchants=b.merchants||[];save();renderAll();toast('恢复备份成功！');}else toast('备份格式不正确',true);}
+    catch(err){toast('解析失败，请确认是JSON备份',true);}
+    $('fileIn').value='';
+  };r.readAsText(file);
+};
+window.resetData=function(){if(confirm('重置会清空所有数据并恢复示例数据，确认吗？')){deliveries=JSON.parse(JSON.stringify(DEF_DELIVERIES));prices=JSON.parse(JSON.stringify(DEF_PRICES));driverRate=0.60;vehicles=JSON.parse(JSON.stringify(DEF_VEHICLES));penalties=JSON.parse(JSON.stringify(DEF_PENALTIES));merchants=JSON.parse(JSON.stringify(DEF_MERCHANTS));save();renderAll();toast('已重置为示例数据');}};
+
+// ===== 工具函数 =====
+function $(id){return document.getElementById(id);}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
+function toast(msg,err=false){const t=$('toast');t.textContent=msg;t.style.background=err?'rgba(239,68,68,.9)':'rgba(0,0,0,.8)';t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+function openModal(id){$(id).classList.add('open');}
+function closeModal(id){$(id).classList.remove('open');}
+window.closeModal=closeModal;
+
+// ===== Tab 切换 =====
+document.querySelectorAll('.tab-item').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    $(btn.dataset.tab).classList.add('active');
+    // 切换到司机面板时显示FAB
+    $('fabBtn').style.display=(btn.dataset.tab==='pDriver'||btn.dataset.tab==='pMerchant')?'flex':'none';
+    if(btn.dataset.tab==='pMerchant'){$('fabBtn').onclick=()=>openAddMerchant();}
+    else{$('fabBtn').onclick=()=>{editDeliveryIdx=null;$('mAddTitle').textContent='➕ 新增配送单';['aDate','aDriver','aArea','aQty','aMerchants'].forEach(id=>{const el=$(id);if(el)el.value='';});refreshDatalist();openModal('mAdd');};}
+  });
+});
+
+// FAB（默认行为：新增配送单）
+$('fabBtn').addEventListener('click',()=>{
+  // 由Tab切换逻辑动态覆盖onclick，此处为默认行为
+});
+$('fabBtn').onclick=()=>{
+  editDeliveryIdx=null;
+  $('mAddTitle').textContent='➕ 新增配送单';
+  ['aDate','aDriver','aArea','aQty','aMerchants'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  refreshDatalist();
+  openModal('mAdd');
+};
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal-ov').forEach(ov=>{
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('open');});
+});
+
+// 文件输入
+const fi=document.createElement('input');fi.type='file';fi.id='fileIn';fi.accept='.json';fi.style.display='none';fi.onchange=importJson;document.body.appendChild(fi);
+
+// 初始化
+load();
+renderAll();
+</script>
+</body>
+</html>
