@@ -1469,29 +1469,20 @@
         refresh: function() { saveAndRefresh(); }
     };
 
-    // ================= Cloud Sync (GitHub Gist) =================
-    var GIST_TOKEN = localStorage.getItem('songshu_gist_token') || '';
-    function setToken(t) { GIST_TOKEN = t; localStorage.setItem('songshu_gist_token', t); }
+    // ================= Cloud Sync (GitHub Repo) =================
+    var SYNC_TOKEN_KEY = 'songshu_sync_token';
+    var SYNC_REPO = 'shuangyu2026/shuangyu-platform';
+    var SYNC_FILE = 'data.json';
+
+    function getSyncToken() { return localStorage.getItem(SYNC_TOKEN_KEY) || ''; }
+    function setSyncToken(t) { localStorage.setItem(SYNC_TOKEN_KEY, t); }
+
     function ensureToken() {
-        if (GIST_TOKEN) return true;
-        var t = prompt('Please enter your GitHub Token for cloud sync:\n(needs gist scope)');
-        if (t && t.trim()) { setToken(t.trim()); return true; }
-        updateSyncStatus('no token configured');
+        if (getSyncToken()) return true;
+        var t = prompt('Enter GitHub Token for sync (repo scope):');
+        if (t && t.trim()) { setSyncToken(t.trim()); return true; }
+        updateSyncStatus('no token');
         return false;
-    }
-    var GIST_ID = null; // will be auto-created on first sync
-    var GIST_FILENAME = 'songshu_data.json';
-    var GIST_ID_KEY = 'songshu_gist_id';
-
-    function getGistId() {
-        if (GIST_ID) return GIST_ID;
-        GIST_ID = localStorage.getItem(GIST_ID_KEY);
-        return GIST_ID;
-    }
-
-    function setGistId(id) {
-        GIST_ID = id;
-        localStorage.setItem(GIST_ID_KEY, id);
     }
 
     function updateSyncStatus(msg) {
@@ -1502,77 +1493,43 @@
     function cloudSave() {
         if (!ensureToken()) return;
         updateSyncStatus('uploading...');
+        var token = getSyncToken();
         var data = { pricing:pricing, drivers:drivers, merchants:merchants, deliveries:deliveries, vehicles:vehicles, penalties:penalties, expenses:expenses, _ts:Date.now() };
-        var content = JSON.stringify(data);
-        var gistId = getGistId();
-        var files = {};
-        files[GIST_FILENAME] = { content: content };
+        var content = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+        var url = 'https://api.github.com/repos/' + SYNC_REPO + '/contents/' + SYNC_FILE;
+        var headers = { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' };
 
-        if (gistId) {
-            // Update existing gist
-            fetch('https://api.github.com/gists/' + gistId, {
-                method: 'PATCH',
-                headers: { 'Authorization': 'token ' + GIST_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ files: files })
-            }).then(function(r) {
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                return r.json();
-            }).then(function(d) {
-                updateSyncStatus('uploaded: ' + new Date().toLocaleTimeString());
-            }).catch(function(e) {
-                updateSyncStatus('upload failed: ' + e.message);
-                // If 404, gist was deleted, create new
-                if (e.message.indexOf('404') >= 0) { setGistId(null); cloudSave(); }
-            });
-        } else {
-            // Create new gist
-            fetch('https://api.github.com/gists', {
-                method: 'POST',
-                headers: { 'Authorization': 'token ' + GIST_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description: 'SongShu Platform Data', public: false, files: files })
-            }).then(function(r) {
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                return r.json();
-            }).then(function(d) {
-                setGistId(d.id);
-                updateSyncStatus('uploaded: ' + new Date().toLocaleTimeString());
-            }).catch(function(e) {
-                updateSyncStatus('create failed: ' + e.message);
-            });
-        }
+        // First get SHA if file exists
+        fetch(url, { headers: headers }).then(function(r) {
+            if (r.ok) return r.json();
+            return null;
+        }).then(function(existing) {
+            var body = { message: 'sync data ' + new Date().toLocaleString(), content: content };
+            if (existing && existing.sha) body.sha = existing.sha;
+            return fetch(url, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
+        }).then(function(r) {
+            if (!r.ok) return r.json().then(function(e) { throw new Error(e.message || r.status); });
+            return r.json();
+        }).then(function(d) {
+            updateSyncStatus('uploaded ' + new Date().toLocaleTimeString());
+        }).catch(function(e) {
+            updateSyncStatus('failed: ' + e.message);
+        });
     }
 
     function cloudLoad() {
         if (!ensureToken()) return;
-        var gistId = getGistId();
-        if (!gistId) {
-            // Try to find our gist
-            updateSyncStatus('searching...');
-            fetch('https://api.github.com/gists', {
-                headers: { 'Authorization': 'token ' + GIST_TOKEN }
-            }).then(function(r) { return r.json(); }).then(function(gists) {
-                for (var i = 0; i < gists.length; i++) {
-                    if (gists[i].files && gists[i].files[GIST_FILENAME]) {
-                        setGistId(gists[i].id);
-                        cloudLoad();
-                        return;
-                    }
-                }
-                updateSyncStatus('no cloud data found, upload first');
-            }).catch(function(e) { updateSyncStatus('search failed: ' + e.message); });
-            return;
-        }
-
         updateSyncStatus('downloading...');
-        fetch('https://api.github.com/gists/' + gistId, {
-            headers: { 'Authorization': 'token ' + GIST_TOKEN }
-        }).then(function(r) {
+        var token = getSyncToken();
+        var url = 'https://api.github.com/repos/' + SYNC_REPO + '/contents/' + SYNC_FILE;
+        var headers = { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' };
+
+        fetch(url, { headers: headers }).then(function(r) {
             if (!r.ok) throw new Error('HTTP ' + r.status);
             return r.json();
         }).then(function(d) {
-            var file = d.files[GIST_FILENAME];
-            if (!file || !file.content) throw new Error('no data');
-            var data = JSON.parse(file.content);
+            var raw = decodeURIComponent(escape(atob(d.content.replace(/\n/g, ''))));
+            var data = JSON.parse(raw);
             if (data.pricing) pricing = data.pricing;
             if (data.drivers) drivers = data.drivers;
             if (data.merchants) merchants = data.merchants;
@@ -1581,10 +1538,9 @@
             if (data.penalties) penalties = data.penalties;
             if (data.expenses) expenses = data.expenses;
             saveAndRefresh();
-            updateSyncStatus('downloaded: ' + new Date().toLocaleTimeString());
+            updateSyncStatus('downloaded ' + new Date().toLocaleTimeString());
         }).catch(function(e) {
-            updateSyncStatus('download failed: ' + e.message);
-            if (e.message.indexOf('404') >= 0) { setGistId(null); updateSyncStatus('cloud data not found'); }
+            updateSyncStatus('failed: ' + e.message);
         });
     }
     // ================= 初始化 =================
