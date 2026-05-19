@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>吉之达送水</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #f5f7fb;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 130px;
+            min-width: 130px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 8px;
+            gap: 4px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 50;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+            overflow-y: auto;
+        }
+        .sidebar-logo {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a6d3f;
+            text-align: center;
+            padding: 8px 4px 16px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 6px;
+            border: none;
+            background: transparent;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            width: 100%;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .tab-btn .tab-icon { font-size: 20px; }
+        .tab-btn:hover { background: #f0fdf4; color: #1a6d3f; }
+        .tab-btn.active {
+            background: #1a6d3f;
+            color: white;
+            box-shadow: 0 2px 8px rgba(26,109,63,0.25);
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-content {
+            margin-left: 130px;
+            flex: 1;
+            padding: 16px;
+            padding-bottom: 80px;
+            min-width: 0;
+        }
+
+        /* ===== 顶部总览 ===== */
+        .summary {
+            background: linear-gradient(135deg, #1a6d3f 0%, #0f5a33 100%);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .summary h2 { font-size: 16px; font-weight: 400; opacity: 0.9; margin-bottom: 12px; }
+        .summary-stats { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .stat { flex: 1; background: rgba(255,255,255,0.15); border-radius: 16px; padding: 12px; text-align: center; }
+        .stat-label { font-size: 12px; opacity: 0.8; margin-bottom: 6px; }
+        .stat-value { font-size: 24px; font-weight: 700; }
+
+        /* ===== 卡片 ===== */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; flex-wrap: wrap; }
+        .driver-name { font-size: 18px; font-weight: 600; color: #1a2c3e; }
+        .driver-total { font-size: 14px; color: #1a6d3f; font-weight: 500; }
+        .delivery-list { display: flex; flex-direction: column; gap: 8px; }
+        .delivery-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .delivery-info { flex: 2; min-width: 120px; }
+        .delivery-area { font-weight: 500; color: #333; }
+        .delivery-date { font-size: 11px; color: #999; }
+        .delivery-qty { font-weight: 600; color: #1a6d3f; min-width: 50px; text-align: right; }
+        .delivery-profit { font-size: 13px; color: #e67e22; font-weight: 500; min-width: 70px; text-align: right; }
+        .delivery-actions { display: flex; gap: 6px; }
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: all 0.1s;
+        }
+        .btn-icon:hover { background: #f0f0f0; }
+        .table-wrapper { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { text-align: left; padding: 12px 8px; background: #f8f9fc; color: #666; border-bottom: 1px solid #e5e7eb; }
+        .data-table td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #333; vertical-align: middle; }
+        .price-input { width: 80px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+        button {
+            background: #1a6d3f;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:active { transform: scale(0.97); }
+        .btn-outline { background: white; color: #1a6d3f; border: 1px solid #1a6d3f; }
+        .btn-small { padding: 4px 10px; font-size: 12px; margin-left: 8px; }
+        .btn-danger { background: #dc3545; }
+        .section-title { font-size: 16px; font-weight: 600; color: #1a2c3e; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 130px;
+            right: 0;
+            background: white;
+            padding: 10px 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .footer-bar button { flex: 1; min-width: 70px; font-size: 12px; padding: 7px 0; }
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: #1a6d3f;
+            color: white;
+            border: none;
+            font-size: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 20;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+        }
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 550px;
+            border-radius: 28px;
+            padding: 24px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-bottom: 16px; }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        .modal-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .filter-bar, .penalty-filter-bar, .date-range-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 120px;
+        }
+        .filter-item label {
+            font-size: 12px;
+            color: #666;
+        }
+        .profit-positive { color: #10b981; }
+        .profit-negative { color: #ef4444; }
+        .bill-summary { background: #f0fdf4; border-left: 4px solid #1a6d3f; padding: 12px; margin-bottom: 12px; border-radius: 12px; }
+        .range-bill-table { margin-top: 20px; }
+        .expense-item { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+        .finance-total { font-weight: bold; background: #e8f0fe; padding: 6px; border-radius: 8px; margin-top: 8px; }
+
+        /* ===== 月度进度看板 ===== */
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .month-nav button {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 16px;
+            line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .month-nav .month-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a2c3e;
+            min-width: 90px;
+            text-align: center;
+        }
+        .driver-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .driver-progress-card {
+            background: white;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            border: 1px solid #f0f0f0;
+            transition: box-shadow 0.2s;
+        }
+        .driver-progress-card:hover { box-shadow: 0 4px 14px rgba(26,109,63,0.12); }
+        .dpc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .dpc-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a2c3e;
+        }
+        .dpc-days {
+            font-size: 12px;
+            color: #888;
+            background: #f5f7fb;
+            border-radius: 20px;
+            padding: 2px 10px;
+        }
+        .dpc-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .dpc-stat {
+            text-align: center;
+        }
+        .dpc-stat-val {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a6d3f;
+            line-height: 1.2;
+        }
+        .dpc-stat-val.profit { color: #e67e22; }
+        .dpc-stat-lbl {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 2px;
+        }
+        /* 进度条 */
+        .progress-bar-wrap {
+            margin-bottom: 10px;
+        }
+        .progress-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .progress-bar-track {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #1a6d3f, #34d399);
+            transition: width 0.5s ease;
+        }
+        .progress-bar-fill.salary {
+            background: linear-gradient(90deg, #2563eb, #60a5fa);
+        }
+        .progress-bar-fill.profit-rate {
+            background: linear-gradient(90deg, #d97706, #fbbf24);
+        }
+        /* 日历热力图 */
+        .heatmap-title {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+        .heatmap-day {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            background: #f0f0f0;
+            position: relative;
+            cursor: default;
+        }
+        .heatmap-day.has-data { background: #bbf7d0; }
+        .heatmap-day.high-data { background: #4ade80; }
+        .heatmap-day.top-data { background: #16a34a; }
+        .heatmap-day.empty { background: transparent; }
+        .heatmap-day { cursor: default; }
+        .heatmap-day.has-tip { cursor: pointer; }
+        /* 自定义浮层 tooltip */
+        #hmTooltip {
+            position: fixed;
+            background: rgba(20,30,20,0.92);
+            color: white;
+            font-size: 12px;
+            line-height: 1.7;
+            padding: 7px 11px;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 9999;
+            max-width: 220px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            display: none;
+            white-space: pre-line;
+        }
+        /* 月度汇总横条 */
+        .month-summary-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: linear-gradient(135deg, #1a6d3f 0%, #0f5a33 100%);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            color: white;
+        }
+        .msb-item {
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+        }
+        .msb-val { font-size: 20px; font-weight: 700; }
+        .msb-lbl { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+        .dashboard-divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 16px 0;
+        }
+
+        /* 批量导入导出工具栏 */
+        .import-export-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: #f8f9fc;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        .import-export-bar span {
+            font-size: 12px;
+            color: #888;
+            margin-right: 4px;
+        }
+
+        /* 响应式：小屏幕侧边栏折叠 */
+        @media (max-width: 600px) {
+            .sidebar { width: 64px; min-width: 64px; padding: 12px 4px; }
+            .sidebar-logo { font-size: 10px; padding: 4px 2px 10px; }
+            .tab-btn { font-size: 10px; padding: 8px 2px; }
+            .tab-btn .tab-icon { font-size: 18px; }
+            .main-content { margin-left: 64px; }
+            .footer-bar { left: 64px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 左侧纵向侧边栏 -->
+<nav class="sidebar">
+    <div class="sidebar-logo">💧 吉之达<br>送水</div>
+    <button class="tab-btn active" onclick="switchTab('driver', this)">
+        <span class="tab-icon">🚚</span>司机明细
+    </button>
+    <button class="tab-btn" onclick="switchTab('region', this)">
+        <span class="tab-icon">📍</span>地区报价
+    </button>
+    <button class="tab-btn" onclick="switchTab('records', this)">
+        <span class="tab-icon">📋</span>配送记录
+    </button>
+    <button class="tab-btn" onclick="switchTab('vehicle', this)">
+        <span class="tab-icon">🚛</span>车辆管理
+    </button>
+    <button class="tab-btn" onclick="switchTab('penalty', this)">
+        <span class="tab-icon">⚠️</span>扣罚记录
+    </button>
+    <button class="tab-btn" onclick="switchTab('finance', this)">
+        <span class="tab-icon">📒</span>财务记账
+    </button>
+</nav>
+
+<!-- 主内容区 -->
+<div class="main-content">
+
+    <div class="summary" id="summaryPanel">
+        <h2>📊 配送利润总览</h2>
+        <div class="summary-stats">
+            <div class="stat"><div class="stat-label">总件数</div><div class="stat-value" id="totalQty">0</div></div>
+            <div class="stat"><div class="stat-label">总运价(元)</div><div class="stat-value" id="totalRevenue">0</div></div>
+            <div class="stat"><div class="stat-label">总司机成本</div><div class="stat-value" id="totalDriverCost">0</div></div>
+            <div class="stat"><div class="stat-label">总利润(元)</div><div class="stat-value" id="totalProfit" style="color:#fdd835;">0</div></div>
+        </div>
+    </div>
+
+    <div id="driverPanel" class="tab-panel">
+        <!-- 月度进度看板区域 -->
+        <div id="driverDashboard"></div>
+        <!-- 原有司机明细列表 -->
+        <div id="driverDetailList"></div>
+    </div>
+    <div id="regionPanel" class="tab-panel" style="display: none;"></div>
+    <div id="recordsPanel" class="tab-panel" style="display: none;"></div>
+    <div id="vehiclePanel" class="tab-panel" style="display: none;"></div>
+    <div id="penaltyPanel" class="tab-panel" style="display: none;"></div>
+    <div id="financePanel" class="tab-panel" style="display: none;"></div>
+
+</div><!-- /main-content -->
+
+<!-- 悬浮添加按钮（配送单） -->
+<button class="fab" id="fabAdd">+</button>
+
+<!-- 新增/编辑配送单模态框 -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <h3 id="deliveryModalTitle">➕ 新增配送单</h3>
+        <input type="date" id="newDate" placeholder="日期">
+        <input type="text" id="newDriver" placeholder="司机姓名" list="driverList">
+        <datalist id="driverList"></datalist>
+        <input type="text" id="newArea" placeholder="地区" list="areaList">
+        <datalist id="areaList"></datalist>
+        <input type="number" id="newQty" placeholder="件数" min="1">
+        <div class="modal-buttons">
+            <button class="btn-outline" onclick="closeModal()">取消</button>
+            <button onclick="saveDelivery()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 车辆管理模态框 -->
+<div id="vehicleModal" class="modal">
+    <div class="modal-content">
+        <h3 id="vehicleModalTitle">🚛 添加车辆</h3>
+        <input type="text" id="vehiclePlate" placeholder="车牌号" required>
+        <input type="text" id="vehicleModel" placeholder="车型" required>
+        <input type="number" id="vehicleMonthlyRent" placeholder="月租金 (元)" step="0.01">
+        <input type="number" id="vehicleDeposit" placeholder="押金 (元)" step="0.01">
+        <input type="date" id="vehiclePurchaseDate" placeholder="购置/租赁日期">
+        <select id="vehicleCurrentDriver"><option value="">未分配司机</option></select>
+        <input type="text" id="vehicleManager" placeholder="车辆负责人" list="managerList"><datalist id="managerList"></datalist>
+        <textarea id="vehicleRemark" rows="2" placeholder="备注"></textarea>
+        <div class="modal-buttons"><button class="btn-outline" onclick="closeVehicleModal()">取消</button><button onclick="saveVehicle()">保存</button></div>
+    </div>
+</div>
+
+<!-- 扣罚模态框 -->
+<div id="penaltyModal" class="modal">
+    <div class="modal-content">
+        <h3 id="penaltyModalTitle">⚠️ 添加扣罚记录</h3>
+        <input type="date" id="penaltyDate" placeholder="扣罚日期" required>
+        <input type="text" id="penaltyDriver" placeholder="司机姓名" list="driverListPenalty">
+        <datalist id="driverListPenalty"></datalist>
+        <input type="number" id="penaltyAmount" placeholder="扣罚金额 (元)" step="0.01" required>
+        <input type="text" id="penaltyReason" placeholder="扣罚原因">
+        <div class="modal-buttons"><button class="btn-outline" onclick="closePenaltyModal()">取消</button><button onclick="savePenalty()">保存</button></div>
+    </div>
+</div>
+
+<!-- 记账 - 添加/编辑支出条目模态框 -->
+<div id="expenseModal" class="modal">
+    <div class="modal-content">
+        <h3 id="expenseModalTitle">➕ 添加支出</h3>
+        <input type="month" id="expenseMonth" placeholder="年-月 (如2026-05)" required>
+        <input type="text" id="expenseCategory" placeholder="支出项目 (如车辆租金、电费、维修、保险等)" required>
+        <input type="number" id="expenseAmount" placeholder="金额 (元)" step="0.01" required>
+        <input type="text" id="expenseRemark" placeholder="备注">
+        <div class="modal-buttons"><button class="btn-outline" onclick="closeExpenseModal()">取消</button><button onclick="saveExpense()">保存</button></div>
+    </div>
+</div>
+
+<!-- 打印工资单模态框 -->
+<div id="printModal" class="modal">
+    <div class="modal-content">
+        <h3>🖨️ 打印工资单</h3>
+        <select id="printDriverSelect"></select>
+        <div class="modal-buttons"><button class="btn-outline" onclick="closePrintModal()">取消</button><button onclick="printSalarySheet()">打印</button></div>
+    </div>
+</div>
+
+<!-- CSV 导入预览模态框 -->
+<div id="csvImportModal" class="modal">
+    <div class="modal-content" style="max-width:700px;">
+        <h3>📥 CSV 批量导入预览</h3>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">请确认以下数据无误后点击"确认导入"。已存在相同ID的记录将被跳过。</p>
+        <div id="csvPreviewContent" style="max-height:300px;overflow-y:auto;"></div>
+        <div id="csvImportStats" style="margin:10px 0;font-size:13px;color:#1a6d3f;"></div>
+        <div class="modal-buttons">
+            <button class="btn-outline" onclick="closeCsvImportModal()">取消</button>
+            <button onclick="confirmCsvImport()">✅ 确认导入</button>
+        </div>
+    </div>
+</div>
+
+<div class="footer-bar">
+    <button onclick="exportTxtReport()">📄 导出报表(TXT)</button>
+    <button onclick="exportBackup()">💾 备份数据(JSON)</button>
+    <button onclick="document.getElementById('fileInput').click()">📂 恢复备份</button>
+    <button onclick="resetToExample()">🔄 重置示例</button>
+    <button onclick="showPrintModal()">🖨️ 打印工资单</button>
+</div>
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="importBackup(event)">
+<input type="file" id="csvFileInput" accept=".csv,.txt" style="display:none" onchange="handleCsvImport(event)">
+
+<!-- 热力图 tooltip 浮层 -->
+<div id="hmTooltip"></div>
+
+<script>
+    // ==================== 默认数据 ====================
+    const defaultRegionPrices = {
+        "虎门":1.25,"凤岗":1.22,"沙田":1.22,"道窖":1.22,"洪梅":1.22,"麻涌":1.22,"中堂":1.22,"高埗":1.22,"望牛墩":1.22,
+        "塘厦":1.20,"谢岗":1.18,"清溪":1.18,"长安":1.12,"厚街":1.12,"樟木头":1.10,"大岭山":1.10,"南城":1.10,"万江":1.10,
+        "莞城":1.10,"石碣":1.08,"石龙":1.08,"茶山":1.08,"石排":1.08,"企石":1.08,"横沥":1.08,"桥头":1.08,"东坑":1.08,
+        "常平":1.08,"寮步":1.08,"大朗":1.08,"黄江":1.08,"东城":1.08
+    };
+    const defaultDeliveriesRaw = [
+        { driver:"祝灵兰", date:"2026-05-02", area:"虎门", qty:241 }, { driver:"祝灵兰", date:"2026-05-06", area:"清溪", qty:248 },
+        { driver:"祝灵兰", date:"2026-05-07", area:"樟木头", qty:235 }, { driver:"祝灵兰", date:"2026-05-08", area:"凤岗", qty:242 },
+        { driver:"祝灵兰", date:"2026-05-09", area:"樟木头", qty:238 }, { driver:"祝灵兰", date:"2026-05-10", area:"大岭山", qty:210 },
+        { driver:"祝灵兰", date:"2026-05-11", area:"常平", qty:223 }, { driver:"祝灵兰", date:"2026-05-11", area:"大朗", qty:241 },
+        { driver:"祝灵兰", date:"2026-05-12", area:"长安", qty:241 }, { driver:"祝灵兰", date:"2026-05-13", area:"长安", qty:221 },
+        { driver:"祝灵兰", date:"2026-05-13", area:"大朗", qty:229 }, { driver:"邓新柠", date:"2026-05-04", area:"清溪", qty:270 },
+        { driver:"邓新柠", date:"2026-05-05", area:"凤岗", qty:239 }, { driver:"邓新柠", date:"2026-05-06", area:"长安", qty:210 },
+        { driver:"邓新柠", date:"2026-05-06", area:"寮步", qty:260 }, { driver:"邓新柠", date:"2026-05-07", area:"桥头", qty:261 },
+        { driver:"邓新柠", date:"2026-05-07", area:"塘厦", qty:242 }, { driver:"邓新柠", date:"2026-05-08", area:"樟木头", qty:235 },
+        { driver:"邓新柠", date:"2026-05-09", area:"长安", qty:225 }, { driver:"邓新柠", date:"2026-05-10", area:"樟木头", qty:210 },
+        { driver:"邓新柠", date:"2026-05-10", area:"洪梅", qty:262 }, { driver:"邓新柠", date:"2026-05-11", area:"谢岗", qty:284 },
+        { driver:"邓新柠", date:"2026-05-12", area:"万江", qty:228 }, { driver:"邓新柠", date:"2026-05-13", area:"塘厦", qty:202 },
+        { driver:"邓新柠", date:"2026-05-13", area:"虎门", qty:217 }, { driver:"邵海良", date:"2026-04-30", area:"横沥", qty:273 },
+        { driver:"邵海良", date:"2026-05-02", area:"寮步", qty:246 }, { driver:"邵海良", date:"2026-05-03", area:"大岭山", qty:240 },
+        { driver:"邵海良", date:"2026-05-04", area:"樟木头", qty:253 }, { driver:"邵海良", date:"2026-05-05", area:"塘厦", qty:241 },
+        { driver:"邵海良", date:"2026-05-05", area:"大岭山", qty:250 }, { driver:"邵海良", date:"2026-05-07", area:"塘厦", qty:217 },
+        { driver:"邵海良", date:"2026-05-08", area:"虎门", qty:217 }, { driver:"邵海良", date:"2026-05-08", area:"长安", qty:227 },
+        { driver:"邵海良", date:"2026-05-09", area:"樟木头", qty:230 }, { driver:"黄世宝", date:"2026-05-05", area:"寮步", qty:265 },
+        { driver:"黄世宝", date:"2026-05-06", area:"谢岗", qty:245 }, { driver:"黄世宝", date:"2026-05-07", area:"黄江", qty:266 },
+        { driver:"黄世宝", date:"2026-05-08", area:"樟木头", qty:240 }, { driver:"黄世宝", date:"2026-05-09", area:"高埗", qty:240 },
+        { driver:"黄世宝", date:"2026-05-11", area:"万江", qty:232 }, { driver:"黄世宝", date:"2026-05-13", area:"清溪", qty:244 },
+        { driver:"黄世宝", date:"2026-05-13", area:"谢岗", qty:213 }, { driver:"韦志长", date:"2026-05-11", area:"横沥", qty:230 },
+        { driver:"韦志长", date:"2026-05-11", area:"寮步", qty:239 }, { driver:"韦志长", date:"2026-05-13", area:"常平", qty:280 },
+        { driver:"李树驹", date:"2026-05-11", area:"虎门", qty:202 }, { driver:"李树驹", date:"2026-05-12", area:"黄江", qty:244 },
+        { driver:"李树驹", date:"2026-05-13", area:"塘厦", qty:230 }
+    ];
+    const defaultVehicles = [
+        { plate: "粤S·12345", model: "4.2米箱式", monthlyRent: 3000, deposit: 10000, purchaseDate: "2025-01-01", currentDriver: "邓新柠", manager: "张三", remark: "保险2026-12到期" },
+        { plate: "粤S·67890", model: "电动面包车", monthlyRent: 2500, deposit: 8000, purchaseDate: "2025-03-15", currentDriver: "祝灵兰", manager: "李四", remark: "" }
+    ];
+    const defaultPenalties = [
+        { id: "p1", driver: "邓新柠", date: "2026-05-10", amount: 50, reason: "迟到" },
+        { id: "p2", driver: "祝灵兰", date: "2026-05-12", amount: 30, reason: "货物轻微破损" }
+    ];
+    const defaultExpenses = [
+        { id: "e1", yearMonth: "2026-05", category: "车辆租金", amount: 5500, remark: "2台车月租" },
+        { id: "e2", yearMonth: "2026-05", category: "电费", amount: 800, remark: "" },
+        { id: "e3", yearMonth: "2026-05", category: "保险", amount: 200, remark: "年缴分摊" }
+    ];
+
+    // 全局状态
+    let regionPrices = {};
+    let driverUnitPrice = 0.60;
+    let deliveries = [];
+    let vehicles = [];
+    let penalties = [];
+    let expenses = [];
+    const TAX_RATE = 0.06;
+    let editingVehiclePlate = null;
+    let editingPenaltyId = null;
+    let currentEditDeliveryId = null;
+    let currentEditExpenseId = null;
+    let pendingCsvRows = [];   // 待确认导入的CSV行
+
+    // ==================== 辅助函数 ====================
+    function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 6); }
+    function ensureDeliveryId() { deliveries.forEach(d => { if (!d.id) d.id = generateId(); }); }
+
+    // 加载/存储
+    function loadFromLocal() {
+        const saved = localStorage.getItem('deliveryApp');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                deliveries = data.deliveries || [];
+                regionPrices = data.regionPrices || {};
+                driverUnitPrice = data.driverUnitPrice !== undefined ? data.driverUnitPrice : 0.60;
+                vehicles = data.vehicles || [];
+                penalties = data.penalties || [];
+                expenses = data.expenses || [];
+                ensureDeliveryId();
+                vehicles = vehicles.map(v => ({ ...v, manager: v.manager || '' }));
+            } catch(e) { console.error(e); }
+        }
+        if (!deliveries.length) {
+            deliveries = JSON.parse(JSON.stringify(defaultDeliveriesRaw)).map(d => ({ ...d, id: generateId() }));
+        }
+        if (Object.keys(regionPrices).length === 0) regionPrices = JSON.parse(JSON.stringify(defaultRegionPrices));
+        if (!vehicles.length) vehicles = JSON.parse(JSON.stringify(defaultVehicles));
+        if (!penalties.length) penalties = JSON.parse(JSON.stringify(defaultPenalties));
+        if (!expenses.length) expenses = JSON.parse(JSON.stringify(defaultExpenses));
+        ensureDeliveryId();
+    }
+    function saveToLocal() {
+        localStorage.setItem('deliveryApp', JSON.stringify({ deliveries, regionPrices, driverUnitPrice, vehicles, penalties, expenses }));
+    }
+    function saveAndRefresh() { saveToLocal(); refreshAll(); }
+
+    // 业务逻辑
+    function getAreaPrice(area) { return regionPrices[area] || 1.08; }
+    function calculateProfit(d) {
+        const revenue = getAreaPrice(d.area) * d.qty;
+        const driverCost = driverUnitPrice * d.qty;
+        const tax = revenue * TAX_RATE;
+        return { revenue, driverCost, tax, profit: revenue - driverCost - tax };
+    }
+    function getDriverSummary() {
+        const map = new Map();
+        deliveries.forEach(d => {
+            if (!map.has(d.driver)) map.set(d.driver, { totalQty:0, totalRevenue:0, totalDriverCost:0, totalProfit:0, deliveries:[] });
+            const p = calculateProfit(d);
+            const data = map.get(d.driver);
+            data.totalQty += d.qty;
+            data.totalRevenue += p.revenue;
+            data.totalDriverCost += p.driverCost;
+            data.totalProfit += p.profit;
+            data.deliveries.push({ ...d, ...p });
+        });
+        return Array.from(map.entries()).map(([name,data]) => ({ name, ...data }));
+    }
+    function getGlobalSummary() {
+        let tq=0, tr=0, tdc=0, tp=0;
+        deliveries.forEach(d => { const p = calculateProfit(d); tq+=d.qty; tr+=p.revenue; tdc+=p.driverCost; tp+=p.profit; });
+        return { totalQty:tq, totalRevenue:tr, totalDriverCost:tdc, totalProfit:tp };
+    }
+    function getAllDriverNames() { return [...new Set(deliveries.map(d => d.driver))].sort(); }
+    function getAllAreas() { return Object.keys(regionPrices).sort(); }
+
+    // 配送单操作
+    function openEditDelivery(id) {
+        const delivery = deliveries.find(d => d.id === id);
+        if (!delivery) return;
+        currentEditDeliveryId = id;
+        document.getElementById('deliveryModalTitle').innerText = '✏️ 编辑配送单';
+        document.getElementById('newDate').value = delivery.date;
+        document.getElementById('newDriver').value = delivery.driver;
+        document.getElementById('newArea').value = delivery.area;
+        document.getElementById('newQty').value = delivery.qty;
+        document.getElementById('addModal').style.display = 'flex';
+    }
+    function deleteDeliveryById(id) {
+        if (confirm('确定要删除这条配送记录吗？')) {
+            deliveries = deliveries.filter(d => d.id !== id);
+            saveAndRefresh();
+            showToast('已删除配送记录');
+        }
+    }
+    function saveDelivery() {
+        const date = document.getElementById('newDate').value;
+        const driver = document.getElementById('newDriver').value.trim();
+        const area = document.getElementById('newArea').value.trim();
+        const qty = parseInt(document.getElementById('newQty').value);
+        if(!date || !driver || !area || isNaN(qty) || qty<=0) { showToast('请完整填写', true); return; }
+        if (!regionPrices[area]) {
+            if (confirm(`地区 "${area}" 不在列表中，自动添加默认1.08元？`)) regionPrices[area] = 1.08;
+            else return;
+        }
+        if (currentEditDeliveryId) {
+            const idx = deliveries.findIndex(d => d.id === currentEditDeliveryId);
+            if (idx !== -1) deliveries[idx] = { ...deliveries[idx], date, driver, area, qty };
+            showToast('已更新');
+        } else {
+            deliveries.push({ id: generateId(), date, driver, area, qty });
+            showToast('已添加');
+        }
+        saveAndRefresh();
+        closeModal();
+        currentEditDeliveryId = null;
+        document.getElementById('deliveryModalTitle').innerText = '➕ 新增配送单';
+        document.getElementById('newDate').value = '';
+        document.getElementById('newDriver').value = '';
+        document.getElementById('newArea').value = '';
+        document.getElementById('newQty').value = '';
+    }
+
+    // ==================== 批量导入/导出 CSV ====================
+
+    /**
+     * 导出配送记录为 CSV
+     * 列：日期,司机,地区,件数,运价,司机成本,利润
+     */
+    window.exportDeliveriesCsv = function(filteredList) {
+        const list = filteredList || deliveries;
+        const header = ['日期', '司机', '地区', '件数', '运价(元)', '司机成本(元)', '利润(元)'];
+        const rows = list.map(d => {
+            const p = calculateProfit(d);
+            return [d.date, d.driver, d.area, d.qty, p.revenue.toFixed(2), p.driverCost.toFixed(2), p.profit.toFixed(2)];
+        });
+        const csvContent = [header, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const bom = '\uFEFF'; // UTF-8 BOM，让 Excel 正确识别中文
+        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `配送记录_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        showToast(`已导出 ${list.length} 条记录`);
+    };
+
+    /**
+     * 导出地区报价为 CSV
+     */
+    window.exportRegionCsv = function() {
+        const header = ['地区', '单价(元/件)'];
+        const rows = Object.entries(regionPrices).sort((a,b)=>a[0].localeCompare(b[0])).map(([area, price]) => [area, price]);
+        const csvContent = [header, ...rows].map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `地区报价_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        showToast('地区报价已导出');
+    };
+
+    /**
+     * 触发 CSV 文件选择（配送记录导入）
+     */
+    window.triggerCsvImport = function() {
+        document.getElementById('csvFileInput').value = '';
+        document.getElementById('csvFileInput').click();
+    };
+
+    /**
+     * 解析 CSV 文件，弹出预览模态框
+     * 支持格式：日期,司机,地区,件数  （前4列必须，其余忽略）
+     * 也支持带表头行（自动检测）
+     */
+    window.handleCsvImport = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const text = e.target.result.replace(/^\uFEFF/, ''); // 去 BOM
+                const lines = text.split(/\r?\n/).filter(l => l.trim());
+                if (!lines.length) { showToast('文件为空', true); return; }
+
+                // 检测是否有表头（第一行含"日期"或"date"等关键词）
+                let startIdx = 0;
+                const firstLine = lines[0].toLowerCase();
+                if (firstLine.includes('日期') || firstLine.includes('date') || firstLine.includes('司机') || firstLine.includes('driver')) {
+                    startIdx = 1;
+                }
+
+                const parsed = [];
+                const errors = [];
+                for (let i = startIdx; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    // 支持逗号或制表符分隔，支持带引号的字段
+                    const cols = parseCsvLine(line);
+                    if (cols.length < 4) { errors.push(`第${i+1}行列数不足（需至少4列：日期,司机,地区,件数）`); continue; }
+                    const date = cols[0].trim();
+                    const driver = cols[1].trim();
+                    const area = cols[2].trim();
+                    const qty = parseInt(cols[3].trim());
+                    if (!date || !driver || !area || isNaN(qty) || qty <= 0) {
+                        errors.push(`第${i+1}行数据无效：${line}`);
+                        continue;
+                    }
+                    // 简单日期格式校验
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                        errors.push(`第${i+1}行日期格式错误（需 YYYY-MM-DD）：${date}`);
+                        continue;
+                    }
+                    parsed.push({ date, driver, area, qty });
+                }
+
+                if (!parsed.length) {
+                    showToast('未解析到有效数据，请检查格式', true);
+                    if (errors.length) alert('错误详情：\n' + errors.slice(0,10).join('\n'));
+                    return;
+                }
+
+                pendingCsvRows = parsed;
+                showCsvPreview(parsed, errors);
+            } catch(err) {
+                showToast('解析失败：' + err.message, true);
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    };
+
+    // 解析单行 CSV（处理带引号的字段）
+    function parseCsvLine(line) {
+        const result = [];
+        let cur = '';
+        let inQuote = false;
+        // 支持逗号或制表符
+        const sep = line.includes('\t') ? '\t' : ',';
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+                else inQuote = !inQuote;
+            } else if (ch === sep && !inQuote) {
+                result.push(cur); cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur);
+        return result;
+    }
+
+    function showCsvPreview(rows, errors) {
+        const previewEl = document.getElementById('csvPreviewContent');
+        const statsEl = document.getElementById('csvImportStats');
+
+        // 检查哪些地区不在报价表中
+        const unknownAreas = [...new Set(rows.map(r => r.area).filter(a => !regionPrices[a]))];
+
+        let html = `<table class="data-table"><thead><tr><th>#</th><th>日期</th><th>司机</th><th>地区</th><th>件数</th><th>备注</th></tr></thead><tbody>`;
+        rows.forEach((r, i) => {
+            const areaWarn = !regionPrices[r.area] ? '⚠️新地区' : '';
+            html += `<tr><td>${i+1}</td><td>${r.date}</td><td>${r.driver}</td><td>${r.area}${areaWarn?'<span style="color:#e67e22;font-size:11px;"> '+areaWarn+'</span>':''}</td><td>${r.qty}</td><td style="font-size:11px;color:#999;">${areaWarn}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        previewEl.innerHTML = html;
+
+        let statsHtml = `共解析 <b>${rows.length}</b> 条有效记录`;
+        if (errors.length) statsHtml += `，<span style="color:#ef4444;">${errors.length} 条错误已跳过</span>`;
+        if (unknownAreas.length) statsHtml += `<br>⚠️ 以下地区不在报价表中，导入后将使用默认单价 1.08 元：<b>${unknownAreas.join('、')}</b>`;
+        statsEl.innerHTML = statsHtml;
+
+        document.getElementById('csvImportModal').style.display = 'flex';
+    }
+
+    window.confirmCsvImport = function() {
+        if (!pendingCsvRows.length) return;
+        let addedCount = 0;
+        pendingCsvRows.forEach(r => {
+            // 自动补充未知地区
+            if (!regionPrices[r.area]) regionPrices[r.area] = 1.08;
+            deliveries.push({ id: generateId(), date: r.date, driver: r.driver, area: r.area, qty: r.qty });
+            addedCount++;
+        });
+        pendingCsvRows = [];
+        saveAndRefresh();
+        closeCsvImportModal();
+        showToast(`成功导入 ${addedCount} 条配送记录`);
+    };
+
+    window.closeCsvImportModal = function() {
+        document.getElementById('csvImportModal').style.display = 'none';
+        pendingCsvRows = [];
+    };
+
+    // 记账支出操作
+    function openAddExpenseModal() {
+        currentEditExpenseId = null;
+        document.getElementById('expenseModalTitle').innerText = '➕ 添加支出';
+        document.getElementById('expenseMonth').value = '';
+        document.getElementById('expenseCategory').value = '';
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseRemark').value = '';
+        document.getElementById('expenseModal').style.display = 'flex';
+    }
+    function editExpense(id) {
+        const exp = expenses.find(e => e.id === id);
+        if (!exp) return;
+        currentEditExpenseId = id;
+        document.getElementById('expenseModalTitle').innerText = '✏️ 编辑支出';
+        document.getElementById('expenseMonth').value = exp.yearMonth;
+        document.getElementById('expenseCategory').value = exp.category;
+        document.getElementById('expenseAmount').value = exp.amount;
+        document.getElementById('expenseRemark').value = exp.remark || '';
+        document.getElementById('expenseModal').style.display = 'flex';
+    }
+    function saveExpense() {
+        const yearMonth = document.getElementById('expenseMonth').value;
+        const category = document.getElementById('expenseCategory').value.trim();
+        const amount = parseFloat(document.getElementById('expenseAmount').value);
+        const remark = document.getElementById('expenseRemark').value.trim();
+        if (!yearMonth || !category || isNaN(amount) || amount<=0) {
+            showToast('请完整填写年月、项目和金额', true);
+            return;
+        }
+        if (currentEditExpenseId) {
+            const idx = expenses.findIndex(e => e.id === currentEditExpenseId);
+            if (idx !== -1) expenses[idx] = { ...expenses[idx], yearMonth, category, amount, remark };
+            showToast('已更新支出');
+        } else {
+            expenses.push({ id: generateId(), yearMonth, category, amount, remark });
+            showToast('已添加支出');
+        }
+        saveAndRefresh();
+        closeExpenseModal();
+    }
+    function deleteExpense(id) {
+        if (confirm('删除此支出记录？')) {
+            expenses = expenses.filter(e => e.id !== id);
+            saveAndRefresh();
+            showToast('已删除');
+        }
+    }
+    function closeExpenseModal() {
+        document.getElementById('expenseModal').style.display = 'none';
+        currentEditExpenseId = null;
+    }
+
+    // 获取月度财务总账
+    function getMonthlyFinance() {
+        const monthsSet = new Set();
+        deliveries.forEach(d => { if(d.date) monthsSet.add(d.date.substring(0,7)); });
+        expenses.forEach(e => monthsSet.add(e.yearMonth));
+        const months = Array.from(monthsSet).sort();
+        const result = [];
+        for (const month of months) {
+            let totalRevenue = 0, totalDriverCost = 0, totalTax = 0;
+            const monthDeliveries = deliveries.filter(d => d.date && d.date.startsWith(month));
+            monthDeliveries.forEach(d => {
+                const p = calculateProfit(d);
+                totalRevenue += p.revenue;
+                totalDriverCost += p.driverCost;
+                totalTax += p.tax;
+            });
+            let totalPenalty = 0;
+            penalties.filter(p => p.date && p.date.startsWith(month)).forEach(p => totalPenalty += p.amount);
+            const actualDriverCost = totalDriverCost - totalPenalty;
+            let totalExpense = 0;
+            const expenseList = expenses.filter(e => e.yearMonth === month);
+            expenseList.forEach(e => totalExpense += e.amount);
+            const netProfit = totalRevenue - actualDriverCost - totalTax - totalExpense;
+            result.push({ month, totalRevenue, totalDriverCost, actualDriverCost, totalPenalty, totalTax, totalExpense, netProfit, expenses: expenseList });
+        }
+        result.sort((a,b)=>b.month.localeCompare(a.month));
+        return result;
+    }
+
+    // 渲染财务记账面板
+    function renderFinancePanel() {
+        const container = document.getElementById('financePanel');
+        const monthlyFinance = getMonthlyFinance();
+        const allMonths = monthlyFinance.map(m => m.month);
+        const filterHtml = `
+            <div class="filter-bar">
+                <div class="filter-item"><label>📅 月度</label><select id="financeMonthFilter"><option value="">全部</option>${allMonths.map(m => `<option value="${m}">${m}</option>`).join('')}</select></div>
+                <div><button class="btn-small" id="applyFinanceFilter">筛选</button><button class="btn-small btn-outline" id="resetFinanceFilter">重置</button></div>
+                <div style="margin-left:auto;"><button class="btn-small" onclick="openAddExpenseModal()">➕ 添加支出</button></div>
+            </div>
+        `;
+        function renderTable(data) {
+            if (!data.length) return '<p style="text-align:center;">暂无财务数据</p>';
+            return `<div class="table-wrapper"><table class="data-table"><thead><tr><th>月份</th><th>配送收入(元)</th><th>司机应发工资(元)</th><th>扣罚冲减(元)</th><th>实际司机成本(元)</th><th>税金(元)</th><th>其他支出(元)</th><th>净利润(元)</th><th>操作</th></tr></thead><tbody>
+                ${data.map(m => `<tr>
+                    <td>${m.month}</td>
+                    <td>${m.totalRevenue.toFixed(2)}</td>
+                    <td>${m.totalDriverCost.toFixed(2)}</td>
+                    <td class="profit-negative">${m.totalPenalty.toFixed(2)}</td>
+                    <td>${m.actualDriverCost.toFixed(2)}</td>
+                    <td>${m.totalTax.toFixed(2)}</td>
+                    <td>${m.totalExpense.toFixed(2)}</td>
+                    <td class="${m.netProfit>=0?'profit-positive':'profit-negative'}">${m.netProfit.toFixed(2)}</td>
+                    <td><button class="btn-small" onclick="showMonthExpenses('${m.month}')">📋 明细</button></td>
+                </tr>`).join('')}
+            </tbody></table></div>`;
+        }
+        function refresh() {
+            const filterMonth = document.getElementById('financeMonthFilter')?.value || '';
+            let filtered = monthlyFinance;
+            if (filterMonth) filtered = filtered.filter(m => m.month === filterMonth);
+            container.innerHTML = `<div class="card"><div class="section-title">📒 月度总账（收入 - 实际司机成本 - 税金 - 其他支出）</div>${filterHtml}${renderTable(filtered)}</div>`;
+            document.getElementById('applyFinanceFilter')?.addEventListener('click', refresh);
+            document.getElementById('resetFinanceFilter')?.addEventListener('click', () => {
+                const ms = document.getElementById('financeMonthFilter'); if(ms) ms.value = '';
+                refresh();
+            });
+        }
+        container.innerHTML = `<div class="card"><div class="section-title">📒 月度总账</div>${filterHtml}加载中...</div>`;
+        refresh();
+    }
+
+    window.showMonthExpenses = function(month) {
+        const monthData = getMonthlyFinance().find(m => m.month === month);
+        if (!monthData) return;
+        let html = `<div style="padding:10px;"><h3>${month} 支出明细</h3>`;
+        if (monthData.expenses.length) {
+            html += `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>项目</th><th>金额(元)</th><th>备注</th><th>操作</th></tr></thead><tbody>`;
+            monthData.expenses.forEach(e => {
+                html += `<tr><td>${e.category}</td><td>${e.amount.toFixed(2)}</td><td>${e.remark || '-'}</td>
+                <td><button class="btn-small btn-outline" onclick="editExpense('${e.id}');closeModalDialog();">编辑</button>
+                <button class="btn-small btn-danger" onclick="deleteExpense('${e.id}');closeModalDialog();">删除</button></td></tr>`;
+            });
+            html += `</tbody></table>`;
+        } else {
+            html += `<p>无其他支出记录</p>`;
+        }
+        html += `<div class="modal-buttons"><button class="btn-outline" onclick="closeModalDialog()">关闭</button></div></div>`;
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `<div class="modal-content">${html}</div>`;
+        document.body.appendChild(modal);
+        window.closeModalDialog = function() { modal.remove(); };
+        modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+    };
+
+    // ==================== 月度进度看板 ====================
+
+    // 获取数据中存在的所有月份，降序
+    function getAllMonths() {
+        const s = new Set();
+        deliveries.forEach(d => { if(d.date) s.add(d.date.substring(0,7)); });
+        return Array.from(s).sort().reverse();
+    }
+
+    // 当前看板选中月份（null = 最新月）
+    let dashboardMonth = null;
+
+    function getActiveDashboardMonth() {
+        const months = getAllMonths();
+        if (!months.length) return null;
+        if (dashboardMonth && months.includes(dashboardMonth)) return dashboardMonth;
+        return months[0];
+    }
+
+    function renderDriverDashboard() {
+        const container = document.getElementById('driverDashboard');
+        if (!container) return;
+        const months = getAllMonths();
+        if (!months.length) { container.innerHTML = ''; return; }
+
+        const activeMonth = getActiveDashboardMonth();
+        const monthIdx = months.indexOf(activeMonth);
+
+        // 当月配送数据
+        const monthDeliveries = deliveries.filter(d => d.date && d.date.startsWith(activeMonth));
+
+        // 月度汇总
+        let mQty=0, mRevenue=0, mProfit=0;
+        const driverSet = new Set();
+        monthDeliveries.forEach(d => {
+            const p = calculateProfit(d);
+            mQty += d.qty; mRevenue += p.revenue; mProfit += p.profit;
+            driverSet.add(d.driver);
+        });
+
+        // 各司机当月数据
+        const driverMonthMap = new Map();
+        monthDeliveries.forEach(d => {
+            if (!driverMonthMap.has(d.driver)) driverMonthMap.set(d.driver, { qty:0, revenue:0, profit:0, driverCost:0, days: new Set(), records:[] });
+            const p = calculateProfit(d);
+            const dm = driverMonthMap.get(d.driver);
+            dm.qty += d.qty; dm.revenue += p.revenue; dm.profit += p.profit; dm.driverCost += p.driverCost;
+            dm.days.add(d.date);
+            dm.records.push(d);
+        });
+
+        // 月度总件数（用于件数占比基准）
+        const totalMonthQty = mQty || 1;
+
+        // 计算当月天数和日历起始
+        const [yr, mo] = activeMonth.split('-').map(Number);
+        const daysInMonth = new Date(yr, mo, 0).getDate();
+        const firstDow = new Date(yr, mo-1, 1).getDay(); // 0=周日
+
+        // 构建每天数据 map：{ date -> { qty, areas: [{area, qty}] } }
+        function buildDayDataMap(records) {
+            const m = {};
+            records.forEach(r => {
+                if (!m[r.date]) m[r.date] = { qty: 0, areaMap: {} };
+                m[r.date].qty += r.qty;
+                m[r.date].areaMap[r.area] = (m[r.date].areaMap[r.area] || 0) + r.qty;
+            });
+            // 将 areaMap 转为排序数组
+            Object.keys(m).forEach(date => {
+                m[date].areas = Object.entries(m[date].areaMap)
+                    .sort((a,b) => b[1]-a[1])
+                    .map(([area, qty]) => ({ area, qty }));
+                delete m[date].areaMap;
+            });
+            return m;
+        }
+
+        // 热力图 HTML（rank: 第几名，从1开始）
+        function heatmapHtml(records, rank, totalDrivers) {
+            const dayData = buildDayDataMap(records);
+            const vals = Object.values(dayData).map(v=>v.qty).filter(v=>v>0);
+            const maxV = vals.length ? Math.max(...vals) : 1;
+            const weekLabels = ['日','一','二','三','四','五','六'];
+            const rankColors = ['#f59e0b','#94a3b8','#b45309','#6b7280'];
+            const rankColor = rank <= 3 ? rankColors[rank-1] : rankColors[3];
+            const rankLabel = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+            let html = `<div class="heatmap-title" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>出车日历（${daysInMonth}天）</span>
+                <span style="font-size:12px;font-weight:700;color:${rankColor};background:${rankColor}18;border-radius:20px;padding:1px 8px;">${rankLabel} 件数排名 ${rank}/${totalDrivers}</span>
+            </div>`;
+            html += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">${weekLabels.map(l=>`<div style="text-align:center;font-size:9px;color:#bbb;">${l}</div>`).join('')}</div>`;
+            html += `<div class="heatmap-grid">`;
+            // 空白占位
+            for (let i=0; i<firstDow; i++) html += `<div class="heatmap-day empty"></div>`;
+            for (let day=1; day<=daysInMonth; day++) {
+                const dateStr = `${activeMonth}-${String(day).padStart(2,'0')}`;
+                const data = dayData[dateStr];
+                const qty = data ? data.qty : 0;
+                let cls = 'heatmap-day';
+                let tipData = '';
+                if (qty > 0) {
+                    const ratio = qty / maxV;
+                    if (ratio >= 0.8) cls += ' top-data';
+                    else if (ratio >= 0.4) cls += ' high-data';
+                    else cls += ' has-data';
+                    cls += ' has-tip';
+                    // 拼接 tooltip 内容：日期+总件数，再列每个地区
+                    const areaLines = data.areas.map(a => `  ${a.area}  ${a.qty}件`).join('\n');
+                    tipData = `${activeMonth}-${String(day).padStart(2,'0')}  共${qty}件\n${areaLines}`;
+                }
+                html += `<div class="${cls}" data-tip="${tipData.replace(/"/g,'&quot;')}"></div>`;
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        // 司机卡片
+        const totalDrivers = driverMonthMap.size;
+        const driverCards = Array.from(driverMonthMap.entries())
+            .sort((a,b) => b[1].qty - a[1].qty)
+            .map(([name, dm], idx) => {
+                const rank = idx + 1;
+                const pct = Math.round(dm.qty / totalMonthQty * 100);
+                // 司机薪资占运价比率
+                const salaryRate = dm.revenue > 0 ? Math.round(dm.driverCost / dm.revenue * 100) : 0;
+                // 利润率 = 利润 / 运价
+                const profitRate = dm.revenue > 0 ? Math.round(dm.profit / dm.revenue * 100) : 0;
+                // 利润率进度条宽度：以50%利润率为满格基准，超出则截断显示100%
+                const profitBarPct = Math.min(Math.max(profitRate, 0), 100);
+                return `<div class="driver-progress-card">
+                    <div class="dpc-header">
+                        <span class="dpc-name">🚚 ${name}</span>
+                        <span class="dpc-days">出车 ${dm.days.size} 天</span>
+                    </div>
+                    <div class="dpc-stats">
+                        <div class="dpc-stat"><div class="dpc-stat-val">${dm.qty}</div><div class="dpc-stat-lbl">总件数</div></div>
+                        <div class="dpc-stat"><div class="dpc-stat-val">${dm.revenue.toFixed(0)}</div><div class="dpc-stat-lbl">运价(元)</div></div>
+                        <div class="dpc-stat"><div class="dpc-stat-val profit">${dm.profit.toFixed(0)}</div><div class="dpc-stat-lbl">利润(元)</div></div>
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-label"><span>💰 司机薪资</span><span>${dm.driverCost.toFixed(0)}元 &nbsp;占运价 ${salaryRate}%</span></div>
+                        <div class="progress-bar-track"><div class="progress-bar-fill salary" style="width:${Math.min(salaryRate,100)}%"></div></div>
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-label"><span>📈 利润率</span><span>${dm.profit.toFixed(0)}元 &nbsp;占运价 ${profitRate}%</span></div>
+                        <div class="progress-bar-track"><div class="progress-bar-fill profit-rate" style="width:${profitBarPct}%"></div></div>
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-label"><span>📦 件数占比</span><span>${pct}%</span></div>
+                        <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+                    </div>
+                    ${heatmapHtml(dm.records, rank, totalDrivers)}
+                </div>`;
+            }).join('');
+
+        // 月份导航
+        const prevMonth = months[monthIdx + 1] || null;
+        const nextMonth = months[monthIdx - 1] || null;
+
+        container.innerHTML = `
+        <div class="card" style="margin-bottom:16px;">
+            <div class="dashboard-header">
+                <div style="font-size:15px;font-weight:700;color:#1a2c3e;">📅 月度配送进度看板</div>
+                <div class="month-nav">
+                    <button class="btn-outline" ${!prevMonth?'disabled style="opacity:0.3"':''} onclick="dashboardMonth='${prevMonth}';renderDriverDashboard();">‹</button>
+                    <span class="month-label">${activeMonth}</span>
+                    <button class="btn-outline" ${!nextMonth?'disabled style="opacity:0.3"':''} onclick="dashboardMonth='${nextMonth}';renderDriverDashboard();">›</button>
+                </div>
+            </div>
+            <div class="month-summary-bar">
+                <div class="msb-item"><div class="msb-val">${driverSet.size}</div><div class="msb-lbl">出车司机</div></div>
+                <div class="msb-item"><div class="msb-val">${monthDeliveries.length}</div><div class="msb-lbl">配送趟次</div></div>
+                <div class="msb-item"><div class="msb-val">${mQty}</div><div class="msb-lbl">总件数</div></div>
+                <div class="msb-item"><div class="msb-val">${mRevenue.toFixed(0)}</div><div class="msb-lbl">总运价(元)</div></div>
+                <div class="msb-item"><div class="msb-val" style="color:#fdd835;">${mProfit.toFixed(0)}</div><div class="msb-lbl">总利润(元)</div></div>
+            </div>
+            <div class="driver-cards-grid">${driverCards || '<p style="color:#aaa;">本月暂无配送数据</p>'}</div>
+        </div>
+        <hr class="dashboard-divider">
+        `;
+    }
+
+    // ==================== 渲染各面板 ====================
+    function renderDriverPanel() {
+        renderDriverDashboard();
+
+        const drivers = getDriverSummary();
+        const detailContainer = document.getElementById('driverDetailList');
+        if (!detailContainer) return;
+        if(!drivers.length) { detailContainer.innerHTML='<div class="card">暂无配送数据</div>'; return; }
+        detailContainer.innerHTML = `<div style="font-size:14px;font-weight:600;color:#666;margin-bottom:10px;padding-left:4px;">📋 全部配送明细（按司机）</div>` +
+            drivers.map(d => `
+            <div class="card">
+                <div class="card-header"><span class="driver-name">${d.name}</span><span class="driver-total">💰 ${d.totalProfit.toFixed(2)}元</span></div>
+                <div style="margin-bottom:12px; display:flex; gap:16px; font-size:13px;"><span>📦 ${d.totalQty}件</span><span>💵 运价 ${d.totalRevenue.toFixed(2)}</span><span>👨‍💼 司机成本 ${d.totalDriverCost.toFixed(2)}</span></div>
+                <div class="delivery-list">${d.deliveries.map(dd => `<div class="delivery-item"><div class="delivery-info"><span class="delivery-area">${dd.area}</span><span class="delivery-date">${dd.date}</span></div><div class="delivery-qty">${dd.qty}件</div><div class="delivery-profit">+${dd.profit.toFixed(2)}</div><div class="delivery-actions"><button class="btn-icon" onclick="openEditDelivery('${dd.id}')">✏️</button><button class="btn-icon" onclick="deleteDeliveryById('${dd.id}')">🗑️</button></div></div>`).join('')}</div>
+            </div>`).join('');
+        const driverList = document.getElementById('driverList'); if(driverList) driverList.innerHTML = getAllDriverNames().map(n=>`<option>${n}</option>`).join('');
+    }
+
+    function renderRegionPanel() {
+        const container = document.getElementById('regionPanel');
+        const sorted = Object.keys(regionPrices).sort();
+        container.innerHTML = `
+        <div class="card">
+            <div class="section-title">📍 地区配送单价管理</div>
+            <div class="import-export-bar">
+                <span>批量操作：</span>
+                <button class="btn-small btn-outline" onclick="exportRegionCsv()">📤 导出地区报价 CSV</button>
+            </div>
+            <div class="add-area-form" style="display:flex; gap:8px; margin-bottom:16px;">
+                <input type="text" id="newAreaName" placeholder="新地区名称">
+                <input type="number" id="newAreaPrice" step="0.01" placeholder="单价(元)">
+                <button class="btn-small" onclick="addNewArea()">➕ 添加地区</button>
+            </div>
+            <div class="table-wrapper"><table class="data-table"><thead><tr><th>地区</th><th>单价(元)</th><th>操作</th></tr></thead><tbody>${sorted.map(r => `<tr><td>${r}</td><td><input type="number" step="0.01" class="price-input" value="${regionPrices[r]}" data-region="${r}" onchange="updateRegionPrice(this)"></td><td><button class="btn-small btn-outline" onclick="deleteArea('${r}')">删除</button></td></tr>`).join('')}</tbody></table></div>
+        </div>
+        <div class="card">
+            <div class="section-title">👨‍✈️ 司机结算单价</div>
+            <div><input type="number" step="0.01" id="driverPriceInput" value="${driverUnitPrice}"><button onclick="updateDriverPrice()">保存</button></div>
+            <div style="margin-top:12px;">税率：${TAX_RATE*100}%</div>
+        </div>`;
+        const areaList = document.getElementById('areaList'); if(areaList) areaList.innerHTML = sorted.map(r => `<option>${r}</option>`).join('');
+    }
+
+    function renderRecordsPanel() {
+        const container = document.getElementById('recordsPanel');
+        const allDrivers = getAllDriverNames();
+        const allAreas = getAllAreas();
+        const yearMonthSet = new Set(); deliveries.forEach(d=>{if(d.date) yearMonthSet.add(d.date.substring(0,7));});
+        const sortedMonths = Array.from(yearMonthSet).sort().reverse();
+        const filterHtml = `<div class="filter-bar">
+            <div class="filter-item"><label>📅 月度</label><select id="filterYearMonth"><option value="">全部</option>${sortedMonths.map(m=>`<option value="${m}">${m}</option>`).join('')}</select></div>
+            <div class="filter-item"><label>👤 司机</label><select id="filterDriver"><option value="">全部</option>${allDrivers.map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div>
+            <div class="filter-item"><label>📍 地区</label><select id="filterArea"><option value="">全部</option>${allAreas.map(a=>`<option value="${a}">${a}</option>`).join('')}</select></div>
+            <div><button class="btn-small" id="applyFilterBtn">筛选</button><button class="btn-small btn-outline" id="resetFilterBtn">重置</button></div>
+        </div>`;
+
+        // 批量导入导出工具栏
+        const importExportBar = `<div class="import-export-bar">
+            <span>批量操作：</span>
+            <button class="btn-small" onclick="triggerCsvImport()">📥 导入 CSV</button>
+            <button class="btn-small btn-outline" id="exportCsvBtn">📤 导出当前筛选 CSV</button>
+            <button class="btn-small btn-outline" onclick="exportDeliveriesCsv()">📤 导出全部 CSV</button>
+            <span style="color:#aaa;font-size:11px;">CSV格式：日期,司机,地区,件数（第一行可为表头）</span>
+        </div>`;
+
+        function getFiltered() {
+            const month = document.getElementById('filterYearMonth')?.value||'', driver = document.getElementById('filterDriver')?.value||'', area = document.getElementById('filterArea')?.value||'';
+            let f = [...deliveries];
+            if(month) f = f.filter(d=>d.date && d.date.startsWith(month));
+            if(driver) f = f.filter(d=>d.driver===driver);
+            if(area) f = f.filter(d=>d.area===area);
+            return f;
+        }
+        function renderTable(list) {
+            if(!list.length) return '<p>暂无记录</p>';
+            return `<div class="table-wrapper"><table class="data-table"><thead><tr><th>日期</th><th>司机</th><th>地区</th><th>件数</th><th>运价</th><th>司机成本</th><th>利润</th><th>操作</th></tr></thead><tbody>${list.map(d=>{const p=calculateProfit(d);return `<tr><td>${d.date}</td><td>${d.driver}</td><td>${d.area}</td><td>${d.qty}</td><td>${p.revenue.toFixed(2)}</td><td>${p.driverCost.toFixed(2)}</td><td class="${p.profit>=0?'profit-positive':'profit-negative'}">${p.profit.toFixed(2)}</td><td><button class="btn-small" onclick="openEditDelivery('${d.id}')">编辑</button><button class="btn-small btn-danger" onclick="deleteDeliveryById('${d.id}')">删除</button></td></tr>`}).join('')}</tbody></table></div>`;
+        }
+        function refresh() {
+            const filtered = getFiltered();
+            container.innerHTML = `<div class="card"><div class="section-title">📋 配送明细记录</div>${importExportBar}${filterHtml}${renderTable(filtered)}</div>`;
+            document.getElementById('applyFilterBtn')?.addEventListener('click', refresh);
+            document.getElementById('resetFilterBtn')?.addEventListener('click', ()=>{['filterYearMonth','filterDriver','filterArea'].forEach(id=>{const el=document.getElementById(id);if(el) el.value='';}); refresh();});
+            document.getElementById('exportCsvBtn')?.addEventListener('click', () => exportDeliveriesCsv(getFiltered()));
+        }
+        container.innerHTML = `<div class="card"><div class="section-title">📋 配送明细记录</div>${importExportBar}${filterHtml}<div>加载中...</div></div>`; refresh();
+    }
+
+    function renderVehiclePanel() {
+        const container = document.getElementById('vehiclePanel');
+        if(!vehicles.length){ container.innerHTML=`<div class="card"><div class="section-title">🚛 车辆列表</div><button class="btn-small" onclick="openAddVehicleModal()">➕ 添加车辆</button><p>暂无车辆</p></div>`; return; }
+        container.innerHTML = `<div class="card"><div class="section-title">🚛 车辆列表</div><button class="btn-small" onclick="openAddVehicleModal()">➕ 添加车辆</button><div class="table-wrapper"><table class="data-table"><thead><tr><th>车牌</th><th>车型</th><th>月租金</th><th>押金</th><th>购置日期</th><th>司机</th><th>负责人</th><th>备注</th><th>操作</th></tr></thead><tbody>${vehicles.map(v=>`<tr><td>${v.plate}</td><td>${v.model}</td><td>${v.monthlyRent?.toFixed(2)||'-'}</td><td>${v.deposit?.toFixed(2)||'-'}</td><td>${v.purchaseDate||'-'}</td><td>${v.currentDriver||'-'}</td><td>${v.manager||'-'}</td><td>${v.remark||'-'}</td><td><button class="btn-small btn-outline" onclick="editVehicle('${v.plate}')">编辑</button><button class="btn-small btn-danger" onclick="deleteVehicle('${v.plate}')">删除</button></td></tr>`).join('')}</tbody></table></div></div>`;
+    }
+
+    function renderPenaltyPanel() {
+        const container = document.getElementById('penaltyPanel');
+        const allDrivers = getAllDriverNames();
+        const filterHtml = `<div class="filter-item"><label>👤 司机</label><select id="penaltyDriverFilter"><option value="">全部</option>${allDrivers.map(d=>`<option value="${d}">${d}</option>`).join('')}</select></div><div><button class="btn-small" id="applyPenaltyFilter">筛选</button><button class="btn-small btn-outline" id="resetPenaltyFilter">重置</button></div><div style="margin-left:auto;"><button class="btn-small" onclick="openAddPenaltyModal()">➕ 添加扣罚</button></div>`;
+        function renderTable(list) { if(!list.length) return '<p>暂无扣罚</p>'; return `<table class="data-table"><thead><tr><th>日期</th><th>司机</th><th>金额</th><th>原因</th><th>操作</th></tr></thead><tbody>${list.map(p=>`<tr><td>${p.date}</td><td>${p.driver}</td><td class="profit-negative">${p.amount.toFixed(2)}</td><td>${p.reason||'-'}</td><td><button class="btn-small btn-outline" onclick="editPenalty('${p.id}')">编辑</button><button class="btn-small btn-danger" onclick="deletePenalty('${p.id}')">删除</button></td></tr>`).join('')}</tbody></table>`; }
+        function refresh(){ const driver=document.getElementById('penaltyDriverFilter')?.value||''; const filtered=penalties.filter(p=>!driver||p.driver===driver); container.innerHTML=`<div class="card"><div class="section-title">⚠️ 扣罚记录管理</div><div class="penalty-filter-bar">${filterHtml}</div>${renderTable(filtered)}</div>`; document.getElementById('applyPenaltyFilter')?.addEventListener('click',refresh); document.getElementById('resetPenaltyFilter')?.addEventListener('click',()=>{const ds=document.getElementById('penaltyDriverFilter');if(ds) ds.value=''; refresh();}); }
+        container.innerHTML=`<div class="card"><div class="section-title">⚠️ 扣罚记录管理</div><div class="penalty-filter-bar">${filterHtml}</div>加载中...</div>`; refresh();
+    }
+
+    function updateSummary() { const g = getGlobalSummary(); document.getElementById('totalQty').innerText = g.totalQty; document.getElementById('totalRevenue').innerText = g.totalRevenue.toFixed(0); document.getElementById('totalDriverCost').innerText = g.totalDriverCost.toFixed(0); document.getElementById('totalProfit').innerText = g.totalProfit.toFixed(0); }
+    function refreshAll() { renderDriverPanel(); renderRegionPanel(); renderRecordsPanel(); renderVehiclePanel(); renderPenaltyPanel(); renderFinancePanel(); updateSummary(); updateDriverSelectInVehicleModal(); updateDriverListForPenalty(); }
+    function updateDriverSelectInVehicleModal() { const select=document.getElementById('vehicleCurrentDriver'); if(select){ const drivers=getAllDriverNames(); select.innerHTML='<option value="">未分配司机</option>'+drivers.map(d=>`<option value="${d}">${d}</option>`).join(''); if(editingVehiclePlate){ const vehicle=vehicles.find(v=>v.plate===editingVehiclePlate); if(vehicle&&vehicle.currentDriver) select.value=vehicle.currentDriver; } } }
+    function updateDriverListForPenalty() { const datalist=document.getElementById('driverListPenalty'); if(datalist) datalist.innerHTML=getAllDriverNames().map(d=>`<option>${d}</option>`).join(''); }
+    window.updateRegionPrice = function(input) { const region = input.dataset.region; const newVal = parseFloat(input.value); if(!isNaN(newVal) && newVal>0) { regionPrices[region] = newVal; saveAndRefresh(); showToast(`${region} 已更新`); } else { input.value = regionPrices[region]; } };
+    window.updateDriverPrice = function() { const newVal = parseFloat(document.getElementById('driverPriceInput').value); if(!isNaN(newVal) && newVal>=0) { driverUnitPrice = newVal; saveAndRefresh(); } };
+    window.addNewArea = function() { const name=document.getElementById('newAreaName').value.trim(); const price=parseFloat(document.getElementById('newAreaPrice').value); if(!name||isNaN(price)||price<=0){ showToast('无效',true); return; } if(regionPrices[name]){ showToast('已存在',true); return; } regionPrices[name]=price; saveAndRefresh(); document.getElementById('newAreaName').value=''; document.getElementById('newAreaPrice').value=''; };
+    window.deleteArea = function(region) { if(confirm(`删除 ${region}?`)){ delete regionPrices[region]; saveAndRefresh(); } };
+    window.openAddVehicleModal = function() { editingVehiclePlate=null; document.getElementById('vehiclePlate').value=''; document.getElementById('vehicleModel').value=''; document.getElementById('vehicleMonthlyRent').value=''; document.getElementById('vehicleDeposit').value=''; document.getElementById('vehiclePurchaseDate').value=''; document.getElementById('vehicleRemark').value=''; document.getElementById('vehicleManager').value=''; updateDriverSelectInVehicleModal(); document.getElementById('vehicleModal').style.display='flex'; };
+    window.editVehicle = function(plate) { const v = vehicles.find(v=>v.plate===plate); if(!v) return; editingVehiclePlate=plate; document.getElementById('vehiclePlate').value=v.plate; document.getElementById('vehicleModel').value=v.model; document.getElementById('vehicleMonthlyRent').value=v.monthlyRent||''; document.getElementById('vehicleDeposit').value=v.deposit||''; document.getElementById('vehiclePurchaseDate').value=v.purchaseDate||''; document.getElementById('vehicleRemark').value=v.remark||''; document.getElementById('vehicleManager').value=v.manager||''; updateDriverSelectInVehicleModal(); document.getElementById('vehicleModal').style.display='flex'; };
+    window.saveVehicle = function() { const plate=document.getElementById('vehiclePlate').value.trim(); const model=document.getElementById('vehicleModel').value.trim(); if(!plate||!model){ showToast('车牌车型必填',true); return; } const monthlyRent=parseFloat(document.getElementById('vehicleMonthlyRent').value)||0; const deposit=parseFloat(document.getElementById('vehicleDeposit').value)||0; const purchaseDate=document.getElementById('vehiclePurchaseDate').value; const currentDriver=document.getElementById('vehicleCurrentDriver').value; const manager=document.getElementById('vehicleManager').value.trim(); const remark=document.getElementById('vehicleRemark').value; if(editingVehiclePlate===null){ if(vehicles.some(v=>v.plate===plate)){ showToast('车牌已存在',true); return; } vehicles.push({plate,model,monthlyRent,deposit,purchaseDate,currentDriver,manager,remark}); } else { const idx=vehicles.findIndex(v=>v.plate===editingVehiclePlate); if(idx!==-1) vehicles[idx]={plate,model,monthlyRent,deposit,purchaseDate,currentDriver,manager,remark}; } saveAndRefresh(); closeVehicleModal(); };
+    window.deleteVehicle = function(plate) { if(confirm('删除车辆？')){ vehicles=vehicles.filter(v=>v.plate!==plate); saveAndRefresh(); } };
+    function closeVehicleModal() { document.getElementById('vehicleModal').style.display='none'; editingVehiclePlate=null; }
+    window.openAddPenaltyModal = function() { editingPenaltyId=null; document.getElementById('penaltyDate').value=''; document.getElementById('penaltyDriver').value=''; document.getElementById('penaltyAmount').value=''; document.getElementById('penaltyReason').value=''; updateDriverListForPenalty(); document.getElementById('penaltyModal').style.display='flex'; };
+    window.editPenalty = function(id) { const p=penalties.find(p=>p.id===id); if(!p) return; editingPenaltyId=id; document.getElementById('penaltyDate').value=p.date; document.getElementById('penaltyDriver').value=p.driver; document.getElementById('penaltyAmount').value=p.amount; document.getElementById('penaltyReason').value=p.reason||''; updateDriverListForPenalty(); document.getElementById('penaltyModal').style.display='flex'; };
+    window.savePenalty = function() { const date=document.getElementById('penaltyDate').value; const driver=document.getElementById('penaltyDriver').value.trim(); const amount=parseFloat(document.getElementById('penaltyAmount').value); const reason=document.getElementById('penaltyReason').value.trim(); if(!date||!driver||isNaN(amount)||amount<=0){ showToast('请完整填写',true); return; } if(editingPenaltyId===null){ penalties.push({id:generateId(),date,driver,amount,reason}); } else { const idx=penalties.findIndex(p=>p.id===editingPenaltyId); if(idx!==-1) penalties[idx]={...penalties[idx],date,driver,amount,reason}; } saveAndRefresh(); closePenaltyModal(); };
+    window.deletePenalty = function(id) { if(confirm('删除扣罚？')){ penalties=penalties.filter(p=>p.id!==id); saveAndRefresh(); } };
+    function closePenaltyModal() { document.getElementById('penaltyModal').style.display='none'; editingPenaltyId=null; }
+    function closeModal() { document.getElementById('addModal').style.display='none'; currentEditDeliveryId=null; document.getElementById('deliveryModalTitle').innerText='➕ 新增配送单'; }
+    function showPrintModal() { const drivers=getDriverSummary(); const select=document.getElementById('printDriverSelect'); select.innerHTML='<option value="all">全部司机</option>'+drivers.map(d=>`<option value="${d.name}">${d.name}</option>`).join(''); document.getElementById('printModal').style.display='flex'; }
+    function closePrintModal() { document.getElementById('printModal').style.display='none'; }
+    window.printSalarySheet = function() { const selected=document.getElementById('printDriverSelect').value; const drivers=getDriverSummary(); const toPrint=selected==='all'?drivers:drivers.filter(d=>d.name===selected); let html='<div><h2>司机工资单</h2>'; toPrint.forEach(d=>{ html+=`<h3>${d.name}</h3><p>总件数:${d.totalQty} 总运价:${d.totalRevenue.toFixed(2)} 成本:${d.totalDriverCost.toFixed(2)} 利润:${d.totalProfit.toFixed(2)}</p>`; }); html+='</div>'; const win=window.open('','_blank'); win.document.write(`<html><head><title>工资单</title></head><body>${html}</body></html>`); win.document.close(); win.print(); closePrintModal(); };
+    window.exportTxtReport = function() { let content = `配送利润报表\n${new Date()}\n总利润:${getGlobalSummary().totalProfit.toFixed(2)}\n`; saveToLocal(); showToast('导出功能已触发'); };
+    window.exportBackup = function() { const backup={deliveries,regionPrices,driverUnitPrice,vehicles,penalties,expenses,exportTime:new Date()}; const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}); const link=document.createElement('a'); link.href=URL.createObjectURL(blob); link.download=`配送备份_${new Date().toISOString().slice(0,19)}.json`; link.click(); showToast('备份已导出'); };
+    window.importBackup = function(event) { const file=event.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=function(e){ try{ const data=JSON.parse(e.target.result); if(data.deliveries&&data.regionPrices&&typeof data.driverUnitPrice==='number'){ deliveries=data.deliveries; regionPrices=data.regionPrices; driverUnitPrice=data.driverUnitPrice; vehicles=data.vehicles||[]; penalties=data.penalties||[]; expenses=data.expenses||[]; ensureDeliveryId(); saveToLocal(); refreshAll(); showToast('恢复成功'); } else showToast('格式错误',true); }catch(err){ showToast('解析失败',true); } document.getElementById('fileInput').value=''; }; reader.readAsText(file); };
+    window.resetToExample = function() { if(confirm('重置所有数据？')){ deliveries=JSON.parse(JSON.stringify(defaultDeliveriesRaw)).map(d=>({...d,id:generateId()})); regionPrices=JSON.parse(JSON.stringify(defaultRegionPrices)); driverUnitPrice=0.60; vehicles=JSON.parse(JSON.stringify(defaultVehicles)); penalties=JSON.parse(JSON.stringify(defaultPenalties)); expenses=JSON.parse(JSON.stringify(defaultExpenses)); saveToLocal(); refreshAll(); showToast('已重置'); } };
+    function showToast(msg,isErr=false){ let t=document.querySelector('.toast'); if(!t){ t=document.createElement('div'); t.className='toast'; document.body.appendChild(t); } t.textContent=msg; t.style.background=isErr?'rgba(239,68,68,0.9)':'rgba(0,0,0,0.8)'; t.style.display='block'; setTimeout(()=>t.style.display='none',2000); }
+
+    // 侧边栏切换（接收按钮元素，避免依赖 event 全局）
+    window.switchTab = function(tab, btnEl) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+        const panels = ['driverPanel','regionPanel','recordsPanel','vehiclePanel','penaltyPanel','financePanel'];
+        const tabMap = { driver:'driverPanel', region:'regionPanel', records:'recordsPanel', vehicle:'vehiclePanel', penalty:'penaltyPanel', finance:'financePanel' };
+        panels.forEach(id => { document.getElementById(id).style.display = 'none'; });
+        const target = tabMap[tab];
+        if (target) document.getElementById(target).style.display = 'block';
+    };
+
+    document.getElementById('fabAdd').onclick = () => { currentEditDeliveryId=null; document.getElementById('deliveryModalTitle').innerText='➕ 新增配送单'; document.getElementById('newDate').value=''; document.getElementById('newDriver').value=''; document.getElementById('newArea').value=''; document.getElementById('newQty').value=''; document.getElementById('addModal').style.display='flex'; };
+    window.onclick = function(e) {
+        if(e.target===document.getElementById('addModal')) closeModal();
+        if(e.target===document.getElementById('printModal')) closePrintModal();
+        if(e.target===document.getElementById('vehicleModal')) closeVehicleModal();
+        if(e.target===document.getElementById('penaltyModal')) closePenaltyModal();
+        if(e.target===document.getElementById('expenseModal')) closeExpenseModal();
+        if(e.target===document.getElementById('csvImportModal')) closeCsvImportModal();
+    };
+
+    window.openEditDelivery = openEditDelivery;
+    window.deleteDeliveryById = deleteDeliveryById;
+    window.openAddExpenseModal = openAddExpenseModal;
+    window.editExpense = editExpense;
+    window.deleteExpense = deleteExpense;
+    window.closeExpenseModal = closeExpenseModal;
+
+    // ==================== 热力图 Tooltip ====================
+    (function() {
+        const tip = document.getElementById('hmTooltip');
+        let hideTimer = null;
+
+        document.addEventListener('mouseover', function(e) {
+            const el = e.target.closest('.heatmap-day.has-tip');
+            if (!el) return;
+            const text = el.dataset.tip;
+            if (!text) return;
+            clearTimeout(hideTimer);
+            tip.textContent = text;
+            tip.style.display = 'block';
+            positionTip(e);
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (tip.style.display === 'none') return;
+            if (!e.target.closest('.heatmap-day.has-tip')) return;
+            positionTip(e);
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            if (!e.target.closest('.heatmap-day.has-tip')) return;
+            hideTimer = setTimeout(() => { tip.style.display = 'none'; }, 80);
+        });
+
+        function positionTip(e) {
+            const pad = 12;
+            let x = e.clientX + pad;
+            let y = e.clientY + pad;
+            // 防止超出右边
+            if (x + tip.offsetWidth + pad > window.innerWidth) {
+                x = e.clientX - tip.offsetWidth - pad;
+            }
+            // 防止超出底部
+            if (y + tip.offsetHeight + pad > window.innerHeight) {
+                y = e.clientY - tip.offsetHeight - pad;
+            }
+            tip.style.left = x + 'px';
+            tip.style.top  = y + 'px';
+        }
+    })();
+
+    loadFromLocal();
+    refreshAll();
+</script>
+</body>
+</html>
