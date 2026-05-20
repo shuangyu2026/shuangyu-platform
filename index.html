@@ -58,28 +58,36 @@
         .batch-bar { margin-left: auto; display: flex; gap: 8px; }
         select { border: 1px solid #cbd5e1; padding: 7px 12px; border-radius: 14px; font-size: 13px; }
         input[type="checkbox"] { accent-color: #1a6d3f; }
-                /* === Cloud Sync === */
+                        /* === Cloud Sync === */
         .sync-bar { display:flex; align-items:center; gap:8px; padding:8px 12px; margin-bottom:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; font-size:12px; color:#166534; }
         .sync-bar button { padding:6px 14px; font-size:12px; border-radius:10px; }
         .sync-status { flex:1; font-size:11px; color:#64748b; text-align:right; }
         .sync-bar .btn-sync { background:#1a6d3f; color:white; }
         .sync-bar .btn-sync-down { background:#2563eb; color:white; }
-        @media (max-width:768px) { .sync-bar { flex-wrap:wrap; gap:6px; padding:8px; } .sync-bar button { flex:1; min-width:80px; } }
-/* === Responsive Mobile Support === */
-        .sidebar-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:49; }
+        /* === Responsive Mobile Support === */
+        .sidebar-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.3); z-index:49; }
         .sidebar-overlay.open { display:block; }
-        .top-bar { display:none; background:white; padding:12px 16px; border-bottom:1px solid #e2e8f0; align-items:center; position:sticky; top:0; z-index:10; }
-        .top-bar .menu-btn { background:none; border:none; font-size:24px; color:#334155; cursor:pointer; padding:4px 8px; }
-        .top-bar .top-bar-title { font-size:16px; font-weight:600; color:#1a6d3f; flex:1; text-align:center; }
-        
-        
-        
-        
-                @media (max-width: 768px) {
-            .sidebar { position:fixed; left:-280px; top:0; bottom:0; width:260px; z-index:50; transition:left 0.3s ease; box-shadow:none; height:100vh; }
-            .sidebar.open { left:0; box-shadow:4px 0 20px rgba(0,0,0,0.15); }
+        .top-bar { display:none; background:white; padding:10px 16px; border-bottom:1px solid #e2e8f0; align-items:center; position:sticky; top:0; z-index:10; }
+        .top-bar .menu-btn { background:none; border:none; font-size:22px; color:#334155; cursor:pointer; padding:4px 8px; display:none; }
+        .top-bar .top-bar-title { font-size:15px; font-weight:600; color:#1a6d3f; flex:1; text-align:center; }
+        .top-bar .sync-header-btn { background:none; border:none; font-size:14px; padding:6px 10px; cursor:pointer; color:#1a6d3f; font-weight:500; display:flex; align-items:center; gap:4px; border-radius:8px; transition:0.2s; }
+        .top-bar .sync-header-btn:hover { background:rgba(26,109,63,0.08); }
+        .top-bar .sync-header-btn.syncing { animation: spin 1s linear infinite; }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        /* === Mobile Slim Sidebar === */
+        .mobile-nav { display:none; position:fixed; left:0; top:0; bottom:0; width:56px; background:#fff; border-right:1px solid #e2e8f0; z-index:40; flex-direction:column; align-items:center; padding:12px 0; gap:4px; overflow-y:auto; box-shadow:2px 0 8px rgba(0,0,0,0.04); }
+        .mobile-nav .mn-logo { font-size:24px; margin-bottom:12px; padding:8px 0; }
+        .mobile-nav .mn-btn { width:42px; height:42px; border-radius:12px; border:none; background:transparent; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; position:relative; transition:0.2s; color:#64748b; }
+        .mobile-nav .mn-btn.active { background:transparent; color:#1a6d3f; }
+        .mobile-nav .mn-btn.active::before { content:''; position:absolute; left:0; top:8px; bottom:8px; width:3px; background:#1a6d3f; border-radius:0 3px 3px 0; }
+        .mobile-nav .mn-btn:active { transform:scale(0.9); }
+
+        @media (max-width: 768px) {
+            .sidebar { display:none !important; }
+            .sidebar-overlay { display:none !important; }
+            .mobile-nav { display:flex; }
             .top-bar { display:flex; }
-            .main-content { padding:12px 10px; }
+            .main-content { padding:12px 10px 12px 66px; }
             .app-layout { flex-direction:column; }
             .summary { border-radius:14px; padding:14px 12px; margin-bottom:14px; }
             .summary-stats { gap:8px; justify-content:space-between; }
@@ -102,41 +110,37 @@
             .batch-bar { margin-left:0; margin-top:8px; width:100%; justify-content:flex-start; flex-wrap:wrap; }
             .import-box { padding:12px; border-radius:12px; }
             .summary h2 { font-size:13px !important; }
-            /* 首页看板手机优化 */
-            .board-summary-mobile { display:grid !important; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px !important; }
-            .board-summary-mobile > div { text-align:center; }
-            .board-summary-mobile .bsm-val { font-size:18px !important; font-weight:700; }
-            .board-summary-mobile .bsm-label { font-size:10px !important; opacity:0.7; }
-            .board-nav-mobile { gap:8px !important; margin-bottom:12px !important; }
-            .board-nav-mobile select { font-size:15px !important; padding:8px 10px !important; min-width:110px !important; }
-            .board-nav-mobile button { width:32px !important; height:32px !important; font-size:16px !important; }
-            .board-cards-mobile { grid-template-columns:1fr !important; gap:10px !important; }
-            .board-card-item { padding:12px !important; gap:4px !important; }
-            .board-card-item .card-data-grid { grid-template-columns:repeat(3,1fr) !important; gap:2px 8px !important; font-size:11px !important; }
-            .board-card-item .card-calendar { margin-top:6px !important; }
-            .board-card-item .card-calendar div[style*="width:16px"] { width:14px !important; height:14px !important; }
-            .board-filter-mobile { flex-direction:column !important; gap:8px !important; padding:12px !important; border-radius:10px !important; }
-            .board-filter-mobile > div { width:100%; }
-            .board-filter-mobile select { width:100%; padding:10px 12px !important; font-size:14px !important; border-radius:8px !important; }
+            .sync-bar { flex-wrap:wrap; gap:6px; padding:8px; }
+            .sync-bar button { flex:1; min-width:80px; }
         }
         @media (max-width: 375px) {
             .stat { min-width:60px; padding:8px 6px; }
             .stat-value { font-size:15px; }
             .stat-label { font-size:10px; }
-            .main-content { padding:8px 6px; }
+            .main-content { padding:8px 6px 8px 62px; }
             .card { padding:12px 8px; }
             .data-table th, .data-table td { padding:6px 3px; font-size:11px; }
             .section-title { font-size:14px; }
             button { padding:8px 12px; font-size:13px; }
-            .board-summary-mobile { grid-template-columns:repeat(3,1fr); gap:6px; padding:10px !important; }
-            .board-summary-mobile .bsm-val { font-size:16px !important; }
-            .board-cards-mobile { gap:8px !important; }
-            .board-card-item { padding:10px !important; }
-            .board-card-item .card-calendar div[style*="width:16px"] { width:12px !important; height:12px !important; }
+            .mobile-nav { width:50px; }
+            .mobile-nav .mn-btn { width:38px; height:38px; font-size:16px; }
         }
     </style>
 </head>
 <body>
+<!-- Mobile Slim Sidebar -->
+<nav class="mobile-nav" id="mobileNav">
+    <div class="mn-logo">🌲</div>
+    <button class="mn-btn active" data-tab="driver" title="司机明细">🚚</button>
+    <button class="mn-btn" data-tab="driverMgmt" title="司机管理">👥</button>
+    <button class="mn-btn" data-tab="merchant" title="上楼门店">🏪</button>
+    <button class="mn-btn" data-tab="config" title="计费配置">⚙️</button>
+    <button class="mn-btn" data-tab="records" title="配送记录">📋</button>
+    <button class="mn-btn" data-tab="import" title="批量导入">📂</button>
+    <button class="mn-btn" data-tab="vehicle" title="车辆管理">🚛</button>
+    <button class="mn-btn" data-tab="penalty" title="扣罚记录">⚠️</button>
+    <button class="mn-btn" data-tab="finance" title="财务记账">📒</button>
+</nav>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="app-layout">
     <div class="sidebar">
@@ -153,18 +157,19 @@
     </div>
     <div class="main-content">
         <div class="top-bar">
-            <button class="menu-btn" onclick="openSidebar()">&#9776;</button>
-            <span class="top-bar-title">&#128063;&#65039; &#26494;&#40736;&#39033;&#30446;&#30475;&#26495;</span>
-            <button class="menu-btn" style="visibility:hidden;">&#9776;</button>
+            <span class="top-bar-title">🐿️ 松鼠看板</span>
+            <button class="sync-header-btn" id="syncHeaderBtn" onclick="handleHeaderSync()"><span id="syncIcon">🔄</span> <span id="syncLabel">同步</span></button>
         </div>
         <div class="summary">
             <h2 style="margin-bottom:12px;font-size:15px;color:#7c9a8e;letter-spacing:1px;">📊 利润总览 <span style="font-size:11px;opacity:0.6;">(上楼费已计入运价 | 月度分析含合计/趟均运力)</span></h2>
             <div class="summary-stats">
-                <div class="stat"><div class="stat-label">总单数</div><div class="stat-value" id="totalOrders">0</div>
+                                <div class="stat"><div class="stat-label">总单数</div><div class="stat-value" id="totalOrders">0</div>
         <div class="sync-bar" id="syncBar">
-            <span>&#9729; &#20113;&#21516;&#27493;</span>
-            <button class="btn-sync" onclick="cloudSave()">&#8593; &#19978;&#20256;</button>
-            <button class="btn-sync-down" onclick="cloudLoad()">&#8595; &#19979;&#36733;</button>
+            <span>☁ 云同步</span>
+            <button class="btn-sync" onclick="cloudSave()">↑ 上传</button>
+            <button class="btn-sync-down" onclick="cloudLoad()">↓ 下载</button>
+            <button style="background:#7c3aed;color:white;" onclick="copyPairLink()">📋 配对链接</button>
+            <button style="background:#0891b2;color:white;" onclick="showPairQR()">📱 二维码</button>
             <span class="sync-status" id="syncStatus"></span>
         </div></div>
                 <div class="stat"><div class="stat-label">总运价(元)</div><div class="stat-value" id="totalRevenue">0</div></div>
@@ -1467,32 +1472,34 @@
     };
 
 
-    // ================= Mobile Sidebar =================
-    function openSidebar() {
-        var sb = document.querySelector('.sidebar');
-        var ov = document.getElementById('sidebarOverlay');
-        if (sb) sb.classList.add('open');
-        if (ov) ov.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeSidebar() {
-        var sb = document.querySelector('.sidebar');
-        var ov = document.getElementById('sidebarOverlay');
-        if (sb) sb.classList.remove('open');
-        if (ov) ov.classList.remove('open');
-        document.body.style.overflow = '';
-    }
-    function switchTab(tab, btabEl) {
+        // ================= Mobile Sidebar =================
+    function openSidebar() {}
+    function closeSidebar() {}
+    function switchTab(tab) {
         var panels = document.querySelectorAll('.tab-panel');
         panels.forEach(function(p) { p.style.display = 'none'; });
         var target = document.getElementById(tab + 'Panel');
         if (target) target.style.display = 'block';
+        // Update desktop sidebar
         document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
         document.querySelectorAll('.nav-btn[data-tab="' + tab + '"]').forEach(function(b) { b.classList.add('active'); });
-        
-        closeSidebar();
+        // Update mobile nav
+        document.querySelectorAll('.mn-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.mn-btn[data-tab="' + tab + '"]').forEach(function(b) { b.classList.add('active'); });
         renderAllPanels();
     }
+
+    // Mobile nav click handling
+    (function initMobileNav() {
+        var mobileNav = document.getElementById('mobileNav');
+        if (!mobileNav) return;
+        mobileNav.addEventListener('click', function(e) {
+            var btn = e.target.closest('.mn-btn');
+            if (!btn) return;
+            var tab = btn.getAttribute('data-tab');
+            if (tab) switchTab(tab);
+        });
+    })();
 
     // ================= Extension API =================
     window.SQExtension = {
@@ -1541,7 +1548,7 @@
         refresh: function() { saveAndRefresh(); }
     };
 
-    // ================= Cloud Sync (GitHub Repo) =================
+        // ================= Cloud Sync (GitHub Repo) =================
     var SYNC_TOKEN_KEY = 'songshu_sync_token';
     var SYNC_REPO = 'shuangyu2026/shuangyu-platform';
     var SYNC_FILE = 'data.json';
@@ -1551,18 +1558,31 @@
 
     function ensureToken() {
         if (getSyncToken()) return true;
-        var t = prompt('Enter GitHub Token for sync (repo scope):');
+        var t = prompt('请输入 GitHub Token (用于云同步):');
         if (t && t.trim()) { setSyncToken(t.trim()); return true; }
-        updateSyncStatus('no token');
+        updateSyncStatus('未配置 token');
         return false;
     }
 
     function updateSyncStatus(msg) {
         var el = document.getElementById('syncStatus');
         if (el) el.textContent = msg;
+        // Also update header button label on mobile
+        var lbl = document.getElementById('syncLabel');
+        if (lbl && msg) {
+            if (msg.indexOf('upload') > -1 || msg.indexOf('download') > -1 || msg.indexOf('ing') > -1) {
+                lbl.textContent = '同步中';
+            } else if (msg.indexOf('success') > -1 || msg.indexOf('ed ') > -1) {
+                lbl.textContent = '已同步';
+                setTimeout(function() { lbl.textContent = '同步'; }, 3000);
+            } else if (msg.indexOf('fail') > -1) {
+                lbl.textContent = '失败';
+                setTimeout(function() { lbl.textContent = '同步'; }, 3000);
+            }
+        }
     }
 
-    function cloudSave() {
+    function cloudSave(callback) {
         if (!ensureToken()) return;
         updateSyncStatus('uploading...');
         var token = getSyncToken();
@@ -1571,7 +1591,6 @@
         var url = 'https://api.github.com/repos/' + SYNC_REPO + '/contents/' + SYNC_FILE;
         var headers = { 'Authorization': 'token ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' };
 
-        // First get SHA if file exists
         fetch(url, { headers: headers }).then(function(r) {
             if (r.ok) return r.json();
             return null;
@@ -1584,12 +1603,14 @@
             return r.json();
         }).then(function(d) {
             updateSyncStatus('uploaded ' + new Date().toLocaleTimeString());
+            if (callback) callback(true);
         }).catch(function(e) {
             updateSyncStatus('failed: ' + e.message);
+            if (callback) callback(false);
         });
     }
 
-    function cloudLoad() {
+    function cloudLoad(callback) {
         if (!ensureToken()) return;
         updateSyncStatus('downloading...');
         var token = getSyncToken();
@@ -1611,10 +1632,91 @@
             if (data.expenses) expenses = data.expenses;
             saveAndRefresh();
             updateSyncStatus('downloaded ' + new Date().toLocaleTimeString());
+            if (callback) callback(true);
         }).catch(function(e) {
             updateSyncStatus('failed: ' + e.message);
+            if (callback) callback(false);
         });
     }
+
+    // ================= Header Sync Button =================
+    function handleHeaderSync() {
+        var iconEl = document.getElementById('syncIcon');
+        if (iconEl) iconEl.style.animation = 'spin 1s linear infinite';
+        cloudLoad(function(ok) {
+            if (iconEl) iconEl.style.animation = '';
+            if (ok) showToast('同步成功');
+        });
+    }
+
+    // ================= URL Token Auto-Extract =================
+    (function extractTokenFromURL() {
+        var params = new URLSearchParams(window.location.search);
+        var token = params.get('token');
+        if (token && token.trim()) {
+            setSyncToken(token.trim());
+            showToast('已自动配置同步 Token');
+            // Remove token from URL for security
+            params.delete('token');
+            var newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+            window.history.replaceState({}, '', newUrl);
+        }
+    })();
+
+    // ================= Auto Sync on Load =================
+    (function autoSyncOnLoad() {
+        if (getSyncToken()) {
+            setTimeout(function() {
+                cloudLoad(function(ok) {
+                    if (ok) updateSyncStatus('auto-synced ' + new Date().toLocaleTimeString());
+                });
+            }, 1500);
+        }
+    })();
+
+    // ================= Pairing: Copy Link & QR Code =================
+    function copyPairLink() {
+        var token = getSyncToken();
+        if (!token) { showToast('请先配置 Token'); return; }
+        var baseUrl = window.location.origin + window.location.pathname;
+        var pairUrl = baseUrl + '?token=' + encodeURIComponent(token);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pairUrl).then(function() {
+                showToast('配对链接已复制，发给手机即可');
+            }).catch(function() {
+                fallbackCopy(pairUrl);
+            });
+        } else {
+            fallbackCopy(pairUrl);
+        }
+    }
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showToast('配对链接已复制'); } catch(e) { showToast('复制失败，请手动复制'); prompt('配对链接：', text); }
+        document.body.removeChild(ta);
+    }
+
+    function showPairQR() {
+        var token = getSyncToken();
+        if (!token) { showToast('请先配置 Token'); return; }
+        var baseUrl = window.location.origin + window.location.pathname;
+        var pairUrl = baseUrl + '?token=' + encodeURIComponent(token);
+        // Use QR code API
+        var qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(pairUrl);
+        var modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:300;';
+        modal.innerHTML = '<div style="background:white;border-radius:20px;padding:24px;text-align:center;max-width:320px;width:90%;">' +
+            '<h3 style="margin-bottom:16px;color:#1a6d3f;font-size:16px;">📱 扫码配对</h3>' +
+            '<p style="font-size:13px;color:#64748b;margin-bottom:16px;">手机扫描二维码即可自动完成同步配置</p>' +
+            '<img src="' + qrImg + '" style="width:200px;height:200px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:16px;">' +
+            '<div style="display:flex;gap:8px;justify-content:center;">' +
+            '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:10px 20px;border-radius:12px;font-size:14px;">关闭</button></div></div>';
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+        document.body.appendChild(modal);
+    }
+
     // ================= 初始化 =================
     loadFromLocal();
     recomputeAllDeliveries();
