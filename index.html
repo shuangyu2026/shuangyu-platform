@@ -207,7 +207,8 @@
 
     function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 8); }
 
-    // ===== 核心：上楼费从门店维护取值（用于自动填充表单） =====
+        // ===== 核心：上楼费从门店维护取值（用于自动填充表单） =====
+    function stripBrackets(s) { return (s || '').replace(/[（）()]/g, ''); }
     function calcUpstairsFromRoute(routeArray) {
         if (!routeArray || routeArray.length === 0) return { upstairsFee: 0, hint: '' };
         var upstairsFee = 0;
@@ -215,7 +216,11 @@
         routeArray.forEach(function(merchantName) {
             var name = (merchantName || '').trim();
             if (!name) return;
-            var m = merchants.find(function(m) { return (m.name || '').trim() === name; });
+            var nameClean = stripBrackets(name);
+            var m = merchants.find(function(m) {
+                var mClean = stripBrackets(m.name || '');
+                return mClean === nameClean || nameClean.indexOf(mClean) > -1 || mClean.indexOf(nameClean) > -1;
+            });
             if (m) {
                 if (m.hasUpstairs) { upstairsFee += (parseFloat(m.upstairsFee) || 0); matched.push(name + '(+' + m.upstairsFee + ')'); }
                 else { matched.push(name + '(无上楼费)'); }
@@ -266,6 +271,23 @@
     }
 
     function recomputeAllDeliveries() { deliveries.forEach(function(d){ computeDeliveryRevenue(d); }); }
+
+    // 一键重算所有配送记录的上楼费（强制重新匹配）
+    window.recalcAllUpstairsFees = function() {
+        var changed = 0;
+        deliveries.forEach(function(d) {
+            var routeArr = d.routeArray || [];
+            if (!routeArr.length && d.routeString) routeArr = d.routeString.split(',').map(function(s){return s.trim();}).filter(function(s){return !!s;});
+            var res = calcUpstairsFromRoute(routeArr);
+            var oldFee = d.upstairsFeeTotal || 0;
+            if (Math.abs(oldFee - res.upstairsFee) > 0.01) changed++;
+            d.upstairsFeeTotal = res.upstairsFee;
+            var rev = calcRevenue(d.km || 0, d.points || routeArr.length, d.upstairsFeeTotal);
+            d.revenueGross = rev.gross; d.revenueTax = rev.tax; d.revenue = rev.net;
+        });
+        saveAndRefresh();
+        showToast('已重算全部上楼费，修正 ' + changed + ' 条记录');
+    };
 
     function getMonthlyEarnedSalaryTotal(month) {
         var total = 0;
@@ -1040,7 +1062,7 @@
             var idx = deliveries.indexOf(d);
             return '<tr><td><input type="checkbox" class="batch-chk" data-id="' + (d.id || idx) + '"></td><td>' + fmtDate(d.date) + '</td><td>' + (d.dispatchNo || '-') + '</td><td>' + (d.driver || '-') + '</td><td>' + d.km + '</td><td>' + (d.points || 0) + '</td><td>' + (d.upstairsFeeTotal || 0).toFixed(2) + '</td><td style="max-width:200px;white-space:normal;word-break:break-all;">' + (d.routeString || '-') + '</td><td>' + (d.revenueGross || 0).toFixed(2) + '</td><td class="profit-negative">' + (d.revenueTax || 0).toFixed(2) + '</td><td>' + (d.revenue || 0).toFixed(2) + '</td><td><button class="btn-small btn-outline" onclick="editDelivery(' + idx + ')">编辑</button> <button class="btn-small btn-danger" onclick="deleteDelivery(' + idx + ')">删除</button></td></tr>';
         }).join('');
-        panel.innerHTML = '<div class="card"><div class="card-header"><span class="section-title">📋 全部配送记录</span><div class="batch-bar"><button class="btn-small btn-danger" onclick="batchDeleteDeliveries()">🗑️ 批量删除</button><button onclick="openDeliveryModal()">➕ 添加配送</button></div></div>' +
+        panel.innerHTML = '<div class="card"><div class="card-header"><span class="section-title">📋 全部配送记录</span><div class="batch-bar"><button class="btn-small btn-outline" onclick="recalcAllUpstairsFees()" title="根据上楼门店维护重新匹配所有记录的上楼费">🔄 一键重算上楼费</button><button class="btn-small btn-danger" onclick="batchDeleteDeliveries()">🗑️ 批量删除</button><button onclick="openDeliveryModal()">➕ 添加配送</button></div></div>' +
             '<div class="table-wrapper"><table class="data-table"><thead><tr><th style="width:40px;"><input type="checkbox" onchange="toggleAllCheckboxes(this)"></th><th>日期</th><th>调度单号</th><th>司机</th><th>公里数</th><th>点位数</th><th>上楼费(元)</th><th>路线</th><th>含税运价(元)</th><th>税额9%(元)</th><th>税后运价(元)</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
         enableAllTableResize();
     }
