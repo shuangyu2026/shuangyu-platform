@@ -1,11 +1,37 @@
-// === 双鱼配送管理平台 v2.0 - External App ===
+// === 双鱼配送管理平台 v2.1 - External App + Supabase Photos ===
 var REPO='shuangyu2026/shuangyu-platform',DATA_PATH='data.json',DATA_BRANCH='main';
 var DATA_RAW_URL='https://raw.githubusercontent.com/'+REPO+'/'+DATA_BRANCH+'/'+DATA_PATH;
+
+// === Supabase 配置 ===
+var SUPABASE_URL = localStorage.getItem('supabase_url') || '';
+var SUPABASE_ANON_KEY = localStorage.getItem('supabase_anon_key') || '';
+var supabase = null;
+
+function initSupabase() {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+}
+
+function configSupabase() {
+  var url = prompt('Supabase Project URL (如 https://xxx.supabase.co):', SUPABASE_URL);
+  if (url === null) return;
+  var key = prompt('Supabase Anon Key:', SUPABASE_ANON_KEY);
+  if (key === null) return;
+  localStorage.setItem('supabase_url', url.trim());
+  localStorage.setItem('supabase_anon_key', key.trim());
+  SUPABASE_URL = url.trim();
+  SUPABASE_ANON_KEY = key.trim();
+  initSupabase();
+  alert('Supabase 配置已保存！刷新页面生效。');
+  location.reload();
+}
 
 function getToken(){return localStorage.getItem('gh_token')||'';}
 function configToken(){var t=prompt('请输入GitHub Token(用于数据写入同步):',getToken());if(t!==null){localStorage.setItem('gh_token',t.trim());alert('已保存');}}
 
 var appData={deliveries:[],drivers:[],merchants:[],pricing:{start_price:280,price_per_km:2.6,price_per_point:18}};
+var driverPhotos = {};
 var currentPage='dashboard';
 var pages=[
   {id:'dashboard',label:'数据总览',icon:'📊'},
@@ -23,6 +49,64 @@ function switchPage(id){currentPage=id;initNav();renderPage();}
 function renderPage(){({dashboard:renderDashboard,delivery:renderDelivery,drivers:renderDrivers,stores:renderStores,billing:renderBilling})[currentPage]();}
 
 function calcGross(r){var c=appData.pricing||{};return Number(c.start_price||280)+(r.distance_km||0)*Number(c.price_per_km||2.6)+(r.delivery_points||0)*Number(c.price_per_point||18)+Number(r.upstairs_fee_total||0);}
+
+// === SUPABASE PHOTO FUNCTIONS ===
+async function loadDriverPhotos() {
+  if (!supabase) return;
+  try {
+    var resp = await supabase.from('driver_photos').select('*');
+    if (resp.error) { console.warn('加载照片失败:', resp.error); return; }
+    driverPhotos = {};
+    (resp.data || []).forEach(function(row) {
+      driverPhotos[row.driver_id] = { photo_url: row.photo_url, file_name: row.file_name };
+    });
+  } catch(e) { console.warn('照片加载异常:', e); }
+}
+
+async function uploadDriverPhoto(driverId, driverName, file) {
+  if (!supabase) { alert('请先配置 Supabase（骑手管理页面顶部）'); return null; }
+  try {
+    var ext = file.name.split('.').pop();
+    var fileName = driverId + '_' + Date.now() + '.' + ext;
+    if (driverPhotos[driverId] && driverPhotos[driverId].file_name) {
+      await supabase.storage.from('driver-photos').remove([driverPhotos[driverId].file_name]);
+    }
+    var upResp = await supabase.storage.from('driver-photos').upload(fileName, file, { cacheControl: '3600', upsert: true });
+    if (upResp.error) { alert('上传失败: ' + upResp.error.message); return null; }
+    var urlResp = supabase.storage.from('driver-photos').getPublicUrl(fileName);
+    var photoUrl = urlResp.data.publicUrl;
+    var dbResp = await supabase.from('driver_photos').upsert({
+      driver_id: driverId,
+      driver_name: driverName,
+      photo_url: photoUrl,
+      file_name: fileName,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'driver_id' });
+    if (dbResp.error) { alert('数据库写入失败: ' + dbResp.error.message); return null; }
+    driverPhotos[driverId] = { photo_url: photoUrl, file_name: fileName };
+    return photoUrl;
+  } catch(e) { alert('上传异常: ' + e.message); return null; }
+}
+
+async function deleteDriverPhoto(driverId) {
+  if (!supabase) return;
+  try {
+    if (driverPhotos[driverId] && driverPhotos[driverId].file_name) {
+      await supabase.storage.from('driver-photos').remove([driverPhotos[driverId].file_name]);
+    }
+    await supabase.from('driver_photos').delete().eq('driver_id', driverId);
+    delete driverPhotos[driverId];
+  } catch(e) { console.warn('删除照片异常:', e); }
+}
+
+function getDriverPhotoHtml(driverId, driverName, size) {
+  var p = driverPhotos[driverId];
+  if (p && p.photo_url) {
+    var cls = size === 'large' ? 'driver-photo-large' : 'driver-photo';
+    return '<img class="' + cls + '" src="' + p.photo_url + '" alt="' + driverName + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" /><div class="driver-avatar" style="display:none">' + (driverName ? driverName[0] : '?') + '</div>';
+  }
+  return '<div class="driver-avatar">' + (driverName ? driverName[0] : '?') + '</div>';
+}
 
 // === DASHBOARD ===
 function renderDashboard(){
@@ -75,23 +159,59 @@ function openDM(id){
 function delDel(id){if(!confirm('确定删除?'))return;appData.deliveries=appData.deliveries.filter(function(x){return x.id!==id;});saveData();renderDelivery();}
 function exportCSV(){var rs=[['单号','日期','骑手','门店','km','站点','上楼费','毛收入']];(appData.deliveries||[]).forEach(function(r){rs.push([r.id,r.delivery_date,r.driver_name,r.merchant_name,r.distance_km,r.delivery_points,r.upstairs_fee_total,calcGross(r).toFixed(2)]);});var csv='\ufeff'+rs.map(function(r){return r.join(',');}).join('\n');var b=new Blob([csv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='deliveries.csv';a.click();}
 
-// === DRIVERS ===
+// === DRIVERS (with photo support) ===
 function renderDrivers(){
   var drs=appData.drivers||[],dl=appData.deliveries||[];
   var ds=drs.map(function(dr){var ts=dl.filter(function(x){return x.driver_name===dr.name;});return{id:dr.id,name:dr.name,phone:dr.phone||'',plate:dr.plate||'',trips:ts.length,rev:ts.reduce(function(s,x){return s+calcGross(x);},0),km:ts.reduce(function(s,x){return s+(x.distance_km||0);},0)};});
-  var cards=ds.map(function(dr){return'<div class="driver-card"><div class="driver-header"><div class="driver-avatar">'+dr.name[0]+'</div><div><div class="driver-name">'+dr.name+'</div><div class="driver-info">'+dr.phone+' '+dr.plate+'</div></div></div><div class="driver-stats"><span>单量:'+dr.trips+'</span><span>收入:\u00a5'+dr.rev.toFixed(0)+'</span><span>km:'+dr.km.toFixed(1)+'</span></div><div class="driver-actions"><button class="btn-icon" onclick="openDrM(\''+dr.id+'\')">编辑</button><button class="btn-icon danger" onclick="delDr(\''+dr.id+'\')">删除</button></div></div>';}).join('');
-  document.getElementById('main-content').innerHTML='<div class="page-header"><div><h2>骑手管理</h2><p class="subtitle">管理骑手信息与业绩</p></div><button class="btn btn-primary" onclick="openDrM()">+ 添加</button></div><div class="stats-grid"><div class="stat-card"><div class="stat-label">骑手数</div><div class="stat-value">'+drs.length+'</div></div><div class="stat-card"><div class="stat-label">总单数</div><div class="stat-value">'+dl.length+'</div></div><div class="stat-card"><div class="stat-label">总收入</div><div class="stat-value" style="color:#16a34a">\u00a5'+dl.reduce(function(s,x){return s+calcGross(x);},0).toFixed(0)+'</div></div></div><div class="card"><div class="driver-grid">'+cards+'</div></div>';
+  var cards=ds.map(function(dr){
+    var photoHtml = getDriverPhotoHtml(dr.id, dr.name, 'small');
+    return '<div class="driver-card"><div class="driver-header">' + photoHtml + '<div><div class="driver-name">'+dr.name+'</div><div class="driver-info">'+dr.phone+' '+dr.plate+'</div></div></div><div class="driver-stats"><span>单量:'+dr.trips+'</span><span>收入:\u00a5'+dr.rev.toFixed(0)+'</span><span>km:'+dr.km.toFixed(1)+'</span></div><div class="driver-actions"><label class="photo-upload-btn"><input type="file" accept="image/*" style="display:none" onchange="handlePhotoUpload(\''+dr.id+'\',\''+dr.name+'\',this)">📷 照片</label><button class="btn-icon" onclick="openDrM(\''+dr.id+'\')">编辑</button><button class="btn-icon danger" onclick="delDr(\''+dr.id+'\')">删除</button></div></div>';
+  }).join('');
+  var supaStatus = supabase ? '<span style="color:#16a34a">✓ Supabase已连接</span>' : '<span style="color:#f59e0b">⚠ 未配置Supabase</span>';
+  document.getElementById('main-content').innerHTML='<div class="page-header"><div><h2>骑手管理</h2><p class="subtitle">管理骑手信息与业绩 | '+supaStatus+'</p></div><div style="display:flex;gap:8px"><button class="btn btn-outline" onclick="configSupabase()">配置Supabase</button><button class="btn btn-primary" onclick="openDrM()">+ 添加</button></div></div><div class="stats-grid"><div class="stat-card"><div class="stat-label">骑手数</div><div class="stat-value">'+drs.length+'</div></div><div class="stat-card"><div class="stat-label">总单数</div><div class="stat-value">'+dl.length+'</div></div><div class="stat-card"><div class="stat-label">总收入</div><div class="stat-value" style="color:#16a34a">\u00a5'+dl.reduce(function(s,x){return s+calcGross(x);},0).toFixed(0)+'</div></div></div><div class="card"><div class="driver-grid">'+cards+'</div></div>';
 }
+
+async function handlePhotoUpload(driverId, driverName, input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('照片大小不能超过 5MB'); return; }
+  var btn = input.parentElement;
+  btn.innerHTML = '<span style="color:#ea580c">上传中...</span>';
+  var url = await uploadDriverPhoto(driverId, driverName, file);
+  if (url) {
+    renderDrivers();
+  } else {
+    btn.innerHTML = '<input type="file" accept="image/*" style="display:none" onchange="handlePhotoUpload(\''+driverId+'\',\''+driverName+'\',this)">📷 照片';
+  }
+}
+
 function openDrM(id){
   var dr=id?(appData.drivers||[]).find(function(x){return x.id===id;}):null;
-  showModal(dr?'编辑骑手':'添加骑手','<div class="form-group"><label>姓名 *</label><input id="f-name" value="'+(dr?dr.name:'')+'"></div><div class="form-group"><label>电话</label><input id="f-phone" value="'+(dr?dr.phone:'')+'"></div><div class="form-group"><label>车牌</label><input id="f-plate" value="'+(dr?dr.plate:'')+'"></div>',function(){
+  var photoSection = '';
+  if (dr) {
+    var p = driverPhotos[dr.id];
+    if (p && p.photo_url) {
+      photoSection = '<div class="form-group"><label>当前照片</label><div class="photo-preview"><img class="driver-photo-large" src="'+p.photo_url+'" /><button class="photo-delete-btn" type="button" onclick="handlePhotoDelete(\''+dr.id+'\')">&times;</button></div></div>';
+    } else {
+      photoSection = '<div class="form-group"><label>照片</label><div style="color:#94a3b8;font-size:12px">暂无照片，可在卡片上点击📷上传</div></div>';
+    }
+  }
+  showModal(dr?'编辑骑手':'添加骑手','<div class="form-group"><label>姓名 *</label><input id="f-name" value="'+(dr?dr.name:'')+'"></div><div class="form-group"><label>电话</label><input id="f-phone" value="'+(dr?dr.phone:'')+'"></div><div class="form-group"><label>车牌</label><input id="f-plate" value="'+(dr?dr.plate:'')+'"></div>' + photoSection,function(){
     var nm=document.getElementById('f-name').value.trim();if(!nm){alert('姓名不能为空');return;}
     var ph=document.getElementById('f-phone').value,pl=document.getElementById('f-plate').value;
     if(dr)Object.assign(dr,{name:nm,phone:ph,plate:pl});else appData.drivers.push({id:'DRV'+Date.now(),name:nm,phone:ph,plate:pl});
     closeModal();saveData();renderDrivers();
   });
 }
-function delDr(id){if(!confirm('确定?'))return;appData.drivers=appData.drivers.filter(function(x){return x.id!==id;});saveData();renderDrivers();}
+
+async function handlePhotoDelete(driverId) {
+  if (!confirm('确定删除该骑手照片?')) return;
+  await deleteDriverPhoto(driverId);
+  closeModal();
+  renderDrivers();
+}
+
+function delDr(id){if(!confirm('确定?'))return;appData.drivers=appData.drivers.filter(function(x){return x.id!==id;});deleteDriverPhoto(id);saveData();renderDrivers();}
 
 // === STORES ===
 function renderStores(){
@@ -149,7 +269,13 @@ async function syncGH(){
     else document.getElementById('syncStatus').textContent='同步失败';
   }catch(e){document.getElementById('syncStatus').textContent='同步异常';}
 }
-async function refreshData(){document.getElementById('syncStatus').textContent='刷新中...';await loadData();renderPage();}
+async function refreshData(){document.getElementById('syncStatus').textContent='刷新中...';await loadData();await loadDriverPhotos();renderPage();}
 
 // Init
-(async function(){await loadData();initNav();renderPage();})();
+(async function(){
+  await loadData();
+  initSupabase();
+  await loadDriverPhotos();
+  initNav();
+  renderPage();
+})();
